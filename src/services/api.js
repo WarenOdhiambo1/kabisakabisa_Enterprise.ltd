@@ -12,9 +12,7 @@ const validateApiUrl = (url) => {
   }
 };
 
-const defaultUrl = 'http://localhost:5000/api';
-const envUrl = process.env.REACT_APP_API_URL;
-const API_BASE_URL = (envUrl && validateApiUrl(envUrl)) ? envUrl : defaultUrl;
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://enterprisebackendltd.vercel.app/api';
 
 // Create axios instance
 const api = axios.create({
