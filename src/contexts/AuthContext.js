@@ -89,7 +89,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
+      console.log('Calling login API with:', credentials);
       const response = await authAPI.login(credentials);
+      console.log('Login API response:', response);
       
       if (response.requiresMfaSetup) {
         return { requiresMfaSetup: true, userId: response.userId };

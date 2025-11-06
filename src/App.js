@@ -21,6 +21,7 @@ import BossPage from './pages/BossPage';
 import ManagerPage from './pages/ManagerPage';
 import AdminPage from './pages/AdminPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import SystemDiagnostics from './components/SystemDiagnostics';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -125,6 +126,8 @@ function AppContent() {
               <AdminPage />
             </ProtectedRoute>
           } />
+
+          <Route path="/diagnostics" element={<SystemDiagnostics />} />
 
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" />} />
