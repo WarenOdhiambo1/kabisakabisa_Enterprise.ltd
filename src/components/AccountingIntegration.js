@@ -56,18 +56,18 @@ const AccountingIntegration = () => {
     }
   );
 
-  const syncEtimsMutation = useMutation(
-    (data) => accountingAPI.syncEtims(data),
-    {
-      onSuccess: (response) => {
-        toast.success(`Invoice synced! Reference: ${response.data.etims_reference}`);
-        setShowSyncDialog(false);
-      },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Sync failed');
-      }
-    }
-  );
+  // const syncEtimsMutation = useMutation(
+  //   (data) => accountingAPI.syncEtims(data),
+  //   {
+  //     onSuccess: (response) => {
+  //       toast.success(`Invoice synced! Reference: ${response.data.etims_reference}`);
+  //       setShowSyncDialog(false);
+  //     },
+  //     onError: (error) => {
+  //       toast.error(error.response?.data?.message || 'Sync failed');
+  //     }
+  //   }
+  // );
 
   const bulkSyncMutation = useMutation(
     (data) => accountingAPI.bulkSyncEtims(data),

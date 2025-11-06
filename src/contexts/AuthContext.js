@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import Cookies from 'js-cookie';
 import { authAPI } from '../services/api';
 
@@ -35,7 +35,19 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, [logout, setupSessionTimeout]);
 
-  const setupSessionTimeout = () => {
+  const logout = useCallback(() => {
+    Cookies.remove('accessToken');
+    Cookies.remove('refreshToken');
+    Cookies.remove('userData');
+    setUser(null);
+    
+    if (sessionTimeout) {
+      clearTimeout(sessionTimeout);
+      setSessionTimeout(null);
+    }
+  }, [sessionTimeout]);
+
+  const setupSessionTimeout = useCallback(() => {
     // Clear existing timeout
     if (sessionTimeout) {
       clearTimeout(sessionTimeout);
@@ -48,7 +60,7 @@ export const AuthProvider = ({ children }) => {
     }, 30 * 60 * 1000); // 30 minutes
 
     setSessionTimeout(timeout);
-  };
+  }, [sessionTimeout, logout]);
 
   const login = async (credentials) => {
     try {
@@ -90,17 +102,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    Cookies.remove('accessToken');
-    Cookies.remove('refreshToken');
-    Cookies.remove('userData');
-    setUser(null);
-    
-    if (sessionTimeout) {
-      clearTimeout(sessionTimeout);
-      setSessionTimeout(null);
-    }
-  };
+
 
   const value = {
     user,

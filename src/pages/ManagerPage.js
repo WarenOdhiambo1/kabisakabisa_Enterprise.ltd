@@ -80,15 +80,15 @@ const ManagerPage = () => {
     weeklyData = []
   } = dashboardData || {};
 
-  const salesData = [
-    { name: 'Mon', sales: 4000, target: 3500 },
-    { name: 'Tue', sales: 3000, target: 3500 },
-    { name: 'Wed', sales: 2000, target: 3500 },
-    { name: 'Thu', sales: 2780, target: 3500 },
-    { name: 'Fri', sales: 1890, target: 3500 },
-    { name: 'Sat', sales: 2390, target: 3500 },
-    { name: 'Sun', sales: 3490, target: 3500 },
-  ];
+  // const salesData = [
+  //   { name: 'Mon', sales: 4000, target: 3500 },
+  //   { name: 'Tue', sales: 3000, target: 3500 },
+  //   { name: 'Wed', sales: 2000, target: 3500 },
+  //   { name: 'Thu', sales: 2780, target: 3500 },
+  //   { name: 'Fri', sales: 1890, target: 3500 },
+  //   { name: 'Sat', sales: 2390, target: 3500 },
+  //   { name: 'Sun', sales: 3490, target: 3500 },
+  // ];
 
   const getRoleColor = (role) => {
     const colors = {
