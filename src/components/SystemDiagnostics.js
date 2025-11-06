@@ -62,7 +62,8 @@ const SystemDiagnostics = () => {
 
   useEffect(() => {
     runSystemCheck();
-  }, [runSystemCheck]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getStatusColor = (status) => {
     switch (status) {
