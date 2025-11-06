@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Paper,
@@ -24,7 +24,7 @@ const SystemDiagnostics = () => {
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://enterprisebackendltd.vercel.app/api';
 
-  const runSystemCheck = async () => {
+  const runSystemCheck = useCallback(async () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/diagnostics/system-check`);
@@ -38,7 +38,7 @@ const SystemDiagnostics = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_BASE_URL]);
 
   const testLogin = async () => {
     if (!testEmail) return;
@@ -62,7 +62,7 @@ const SystemDiagnostics = () => {
 
   useEffect(() => {
     runSystemCheck();
-  }, []);
+  }, [runSystemCheck]);
 
   const getStatusColor = (status) => {
     switch (status) {
