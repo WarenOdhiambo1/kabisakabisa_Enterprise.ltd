@@ -2,6 +2,19 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import Cookies from 'js-cookie';
 import { authAPI } from '../services/api';
 
+// Safe JSON parsing utility
+const safeJsonParse = (str) => {
+  if (!str || str === 'undefined' || str === 'null') {
+    return null;
+  }
+  try {
+    return JSON.parse(str);
+  } catch (error) {
+    console.error('JSON parse error:', error);
+    return null;
+  }
+};
+
 const AuthContext = createContext();
 
 export const useAuth = () => {
@@ -21,6 +34,7 @@ export const AuthProvider = ({ children }) => {
     Cookies.remove('accessToken');
     Cookies.remove('refreshToken');
     Cookies.remove('userData');
+    Cookies.remove('csrfToken');
     setUser(null);
     
     if (sessionTimeout) {
@@ -28,6 +42,14 @@ export const AuthProvider = ({ children }) => {
       setSessionTimeout(null);
     }
   }, [sessionTimeout]);
+
+  // Clean up any invalid cookies on app start
+  const cleanupInvalidCookies = useCallback(() => {
+    const userData = Cookies.get('userData');
+    if (userData === 'undefined' || userData === 'null') {
+      logout();
+    }
+  }, [logout]);
 
   const setupSessionTimeout = useCallback(() => {
     // Clear existing timeout
@@ -45,22 +67,25 @@ export const AuthProvider = ({ children }) => {
   }, [sessionTimeout, logout]);
 
   useEffect(() => {
+    // Clean up any invalid cookies first
+    cleanupInvalidCookies();
+    
     // Check for existing token on app load
     const token = Cookies.get('accessToken');
     const userData = Cookies.get('userData');
     
     if (token && userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
+      const parsedUser = safeJsonParse(userData);
+      if (parsedUser) {
         setUser(parsedUser);
         setupSessionTimeout();
-      } catch (error) {
-        console.error('Error parsing user data:', error);
+      } else {
+        // Clean up invalid cookies
         logout();
       }
     }
     setLoading(false);
-  }, [logout, setupSessionTimeout]);
+  }, [logout, setupSessionTimeout, cleanupInvalidCookies]);
 
   const login = async (credentials) => {
     try {
