@@ -54,6 +54,7 @@ function AppContent() {
       <CssBaseline />
       <Router>
         {user && <Navbar openExternalPortal={openExternalPortal} />}
+        <div style={{ paddingTop: user ? '64px' : '0' }}>
         {externalPortal ? (
           <ExternalPortal 
             url={externalPortal.url} 
@@ -138,6 +139,7 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         )}
+        </div>
       </Router>
       <Toaster position="top-right" />
     </div>
