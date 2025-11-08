@@ -30,7 +30,7 @@ import {
   Menu,
   InputAdornment
 } from '@mui/material';
-import { Add, Edit, Delete, LocalShipping, Build, TrendingUp, DirectionsCar, History, Search } from '@mui/icons-material';
+import { Add, Edit, Delete, LocalShipping, Build, TrendingUp, DirectionsCar, Search } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import QuickUpload from '../components/QuickUpload';
 
