@@ -35,7 +35,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import QuickUpload from '../components/QuickUpload';
 import HistoricalDataViewer from '../components/HistoricalDataViewer';
 import { useForm } from 'react-hook-form';
-import { logisticsAPI, hrAPI, dataAPI, genericDataAPI } from '../services/api';
+import { logisticsAPI, hrAPI, dataAPI } from '../services/api';
 import { formatCurrency } from '../theme';
 import toast from 'react-hot-toast';
 
