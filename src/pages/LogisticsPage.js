@@ -60,10 +60,23 @@ const LogisticsPage = ({ openExternalPortal }) => {
     'logisticsPageData',
     () => dataAPI.getPageData('logistics')
   );
+  
+  // Separate maintenance query for debugging
+  const { data: maintenanceData } = useQuery(
+    'maintenanceData',
+    () => genericDataAPI.getAll('Vehicle_Maintenance'),
+    { enabled: true }
+  );
+  
+  console.log('Direct maintenance query:', maintenanceData);
 
   const vehicles = useMemo(() => pageData?.vehicles || [], [pageData?.vehicles]);
   const allTrips = useMemo(() => pageData?.trips || [], [pageData?.trips]);
   const maintenance = useMemo(() => pageData?.maintenance || [], [pageData?.maintenance]);
+  
+  // Debug: Log maintenance data
+  console.log('Maintenance data:', maintenance);
+  console.log('Page data:', pageData);
   
   // Helper functions to resolve IDs to names
   const getVehiclePlateNumber = (vehicleId) => {
