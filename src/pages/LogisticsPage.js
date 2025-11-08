@@ -52,8 +52,10 @@ const LogisticsPage = ({ openExternalPortal }) => {
   const [selectedVehicleForTrips, setSelectedVehicleForTrips] = useState('');
   const [performancePeriod, setPerformancePeriod] = useState('all');
   const [selectedVehicleForMaintenance, setSelectedVehicleForMaintenance] = useState('');
-  const [tripDateFilter, setTripDateFilter] = useState('');
-  const [maintenanceDateFilter, setMaintenanceDateFilter] = useState('');
+  const [tripStartDate, setTripStartDate] = useState('');
+  const [tripEndDate, setTripEndDate] = useState('');
+  const [maintenanceStartDate, setMaintenanceStartDate] = useState('');
+  const [maintenanceEndDate, setMaintenanceEndDate] = useState('');
 
   const { register, handleSubmit, reset, setValue } = useForm();
   const { register: registerTrip, handleSubmit: handleTripSubmit, reset: resetTrip } = useForm();
@@ -72,12 +74,13 @@ const LogisticsPage = ({ openExternalPortal }) => {
   const maintenance = useMemo(() => {
     let data = pageData?.maintenance || [];
     
-    // Filter by date
-    if (maintenanceDateFilter) {
-      const selectedDate = new Date(maintenanceDateFilter);
+    // Filter by date range
+    if (maintenanceStartDate || maintenanceEndDate) {
       data = data.filter(record => {
         const maintenanceDate = new Date(record.maintenance_date);
-        return maintenanceDate.toDateString() === selectedDate.toDateString();
+        const start = maintenanceStartDate ? new Date(maintenanceStartDate) : new Date('1900-01-01');
+        const end = maintenanceEndDate ? new Date(maintenanceEndDate) : new Date('2100-12-31');
+        return maintenanceDate >= start && maintenanceDate <= end;
       });
     }
     
@@ -90,7 +93,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
     }
     
     return data.sort((a, b) => new Date(b.maintenance_date) - new Date(a.maintenance_date));
-  }, [pageData?.maintenance, maintenanceDateFilter, selectedVehicleForMaintenance]);
+  }, [pageData?.maintenance, maintenanceStartDate, maintenanceEndDate, selectedVehicleForMaintenance]);
   
 
   
@@ -111,12 +114,13 @@ const LogisticsPage = ({ openExternalPortal }) => {
   const trips = useMemo(() => {
     let filteredTrips = [...allTrips];
     
-    // Filter by date
-    if (tripDateFilter) {
-      const selectedDate = new Date(tripDateFilter);
+    // Filter by date range
+    if (tripStartDate || tripEndDate) {
       filteredTrips = filteredTrips.filter(trip => {
         const tripDate = new Date(trip.trip_date);
-        return tripDate.toDateString() === selectedDate.toDateString();
+        const start = tripStartDate ? new Date(tripStartDate) : new Date('1900-01-01');
+        const end = tripEndDate ? new Date(tripEndDate) : new Date('2100-12-31');
+        return tripDate >= start && tripDate <= end;
       });
     }
     
@@ -132,7 +136,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
     }
     
     return filteredTrips.sort((a, b) => new Date(b.trip_date) - new Date(a.trip_date));
-  }, [allTrips, selectedVehicleForTrips, vehicles, tripDateFilter]);
+  }, [allTrips, selectedVehicleForTrips, vehicles, tripStartDate, tripEndDate]);
   
   // Filter vehicles by search
   const filteredVehicles = useMemo(() => {
@@ -506,20 +510,22 @@ const LogisticsPage = ({ openExternalPortal }) => {
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                 <TextField
                   size="small"
-                  label="Select Date"
+                  label="From Date"
                   type="date"
-                  value={tripDateFilter}
-                  onChange={(e) => setTripDateFilter(e.target.value)}
+                  value={tripStartDate}
+                  onChange={(e) => setTripStartDate(e.target.value)}
                   InputLabelProps={{ shrink: true }}
                   sx={{ minWidth: 150 }}
                 />
-                <Button
+                <TextField
                   size="small"
-                  onClick={() => setTripDateFilter('')}
-                  variant="outlined"
-                >
-                  Clear Date
-                </Button>
+                  label="To Date"
+                  type="date"
+                  value={tripEndDate}
+                  onChange={(e) => setTripEndDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ minWidth: 150 }}
+                />
                 <FormControl size="small" sx={{ minWidth: 150 }}>
                   <InputLabel>Vehicle</InputLabel>
                   <Select
@@ -535,8 +541,27 @@ const LogisticsPage = ({ openExternalPortal }) => {
                     ))}
                   </Select>
                 </FormControl>
+                <Button
+                  variant="contained"
+                  startIcon={<Search />}
+                  onClick={() => {}}
+                  size="small"
+                >
+                  Search
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setTripStartDate('');
+                    setTripEndDate('');
+                    setSelectedVehicleForTrips('');
+                  }}
+                  variant="outlined"
+                >
+                  Clear
+                </Button>
                 <Typography variant="body2" color="text.secondary">
-                  {trips.length} trips {tripDateFilter && `on ${new Date(tripDateFilter).toLocaleDateString()}`}
+                  {trips.length} trips
                 </Typography>
               </Box>
             </Box>
@@ -605,20 +630,22 @@ const LogisticsPage = ({ openExternalPortal }) => {
               <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                 <TextField
                   size="small"
-                  label="Select Date"
+                  label="From Date"
                   type="date"
-                  value={maintenanceDateFilter}
-                  onChange={(e) => setMaintenanceDateFilter(e.target.value)}
+                  value={maintenanceStartDate}
+                  onChange={(e) => setMaintenanceStartDate(e.target.value)}
                   InputLabelProps={{ shrink: true }}
                   sx={{ minWidth: 150 }}
                 />
-                <Button
+                <TextField
                   size="small"
-                  onClick={() => setMaintenanceDateFilter('')}
-                  variant="outlined"
-                >
-                  Clear Date
-                </Button>
+                  label="To Date"
+                  type="date"
+                  value={maintenanceEndDate}
+                  onChange={(e) => setMaintenanceEndDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ minWidth: 150 }}
+                />
                 <FormControl size="small" sx={{ minWidth: 150 }}>
                   <InputLabel>Vehicle</InputLabel>
                   <Select
@@ -634,8 +661,27 @@ const LogisticsPage = ({ openExternalPortal }) => {
                     ))}
                   </Select>
                 </FormControl>
+                <Button
+                  variant="contained"
+                  startIcon={<Search />}
+                  onClick={() => {}}
+                  size="small"
+                >
+                  Search
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setMaintenanceStartDate('');
+                    setMaintenanceEndDate('');
+                    setSelectedVehicleForMaintenance('');
+                  }}
+                  variant="outlined"
+                >
+                  Clear
+                </Button>
                 <Typography variant="body2" color="text.secondary">
-                  {maintenance.length} records {maintenanceDateFilter && `on ${new Date(maintenanceDateFilter).toLocaleDateString()}`}
+                  {maintenance.length} records
                 </Typography>
               </Box>
             </Box>
