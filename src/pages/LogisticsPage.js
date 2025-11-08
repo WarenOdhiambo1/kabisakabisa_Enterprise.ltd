@@ -65,6 +65,19 @@ const LogisticsPage = ({ openExternalPortal }) => {
   const allTrips = useMemo(() => pageData?.trips || [], [pageData?.trips]);
   const maintenance = useMemo(() => pageData?.maintenance || [], [pageData?.maintenance]);
   
+  // Helper functions to resolve IDs to names
+  const getVehiclePlateNumber = (vehicleId) => {
+    if (Array.isArray(vehicleId)) vehicleId = vehicleId[0];
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    return vehicle?.plate_number || 'N/A';
+  };
+  
+  const getDriverName = (driverId) => {
+    if (Array.isArray(driverId)) driverId = driverId[0];
+    const driver = employees.find(emp => emp.id === driverId);
+    return driver?.full_name || 'N/A';
+  };
+  
   // Sort trips by date (newest first) and filter by selected vehicle
   const trips = useMemo(() => {
     let filteredTrips = [...allTrips];
@@ -72,11 +85,10 @@ const LogisticsPage = ({ openExternalPortal }) => {
     if (selectedVehicleForTrips) {
       const selectedVehicle = vehicles.find(v => v.id === selectedVehicleForTrips);
       if (selectedVehicle) {
-        filteredTrips = filteredTrips.filter(trip => 
-          trip.vehicle_plate_number === selectedVehicle.plate_number ||
-          trip.vehicle === selectedVehicle.plate_number ||
-          trip.vehicle_id === selectedVehicleForTrips
-        );
+        filteredTrips = filteredTrips.filter(trip => {
+          const tripVehicleId = Array.isArray(trip.vehicle_id) ? trip.vehicle_id[0] : trip.vehicle_id;
+          return tripVehicleId === selectedVehicleForTrips;
+        });
       }
     }
     
@@ -493,7 +505,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
                     return (
                       <TableRow key={trip.id}>
                         <TableCell>{trip.trip_date ? new Date(trip.trip_date).toLocaleDateString() : 'N/A'}</TableCell>
-                        <TableCell>{trip.vehicle_plate_number || trip.vehicle || 'N/A'}</TableCell>
+                        <TableCell>{getVehiclePlateNumber(trip.vehicle_id)}</TableCell>
                         <TableCell>{trip.destination || 'N/A'}</TableCell>
                         <TableCell>{trip.distance_km || 0}</TableCell>
                         <TableCell>{formatCurrency(trip.fuel_cost || 0)}</TableCell>
@@ -506,7 +518,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
                             {formatCurrency(profit)}
                           </Typography>
                         </TableCell>
-                        <TableCell>{trip.driver_name || trip.driver || 'N/A'}</TableCell>
+                        <TableCell>{getDriverName(trip.driver_id)}</TableCell>
                       </TableRow>
                     );
                   })}
@@ -548,11 +560,10 @@ const LogisticsPage = ({ openExternalPortal }) => {
                     </TableHead>
                     <TableBody>
                       {vehicles.map((vehicle) => {
-                        const vehicleTrips = allTrips.filter(t => 
-                          t.vehicle_plate_number === vehicle.plate_number ||
-                          t.vehicle === vehicle.plate_number ||
-                          t.vehicle_id === vehicle.id
-                        );
+                        const vehicleTrips = allTrips.filter(t => {
+                          const tripVehicleId = Array.isArray(t.vehicle_id) ? t.vehicle_id[0] : t.vehicle_id;
+                          return tripVehicleId === vehicle.id;
+                        });
                         const revenue = vehicleTrips.reduce((sum, t) => sum + (t.amount_charged || 0), 0);
                         const profit = vehicleTrips.reduce((sum, t) => sum + ((t.amount_charged || 0) - (t.fuel_cost || 0)), 0);
                         
@@ -609,7 +620,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
                       {maintenance.slice(0, 5).map((record) => (
                         <TableRow key={record.id}>
                           <TableCell>{record.maintenance_date ? new Date(record.maintenance_date).toLocaleDateString() : 'N/A'}</TableCell>
-                          <TableCell>{record.vehicle_plate_number || record.vehicle || 'N/A'}</TableCell>
+                          <TableCell>{getVehiclePlateNumber(record.vehicle_id)}</TableCell>
                           <TableCell>{record.maintenance_type || 'N/A'}</TableCell>
                           <TableCell>{formatCurrency(record.cost || 0)}</TableCell>
                         </TableRow>
