@@ -840,11 +840,11 @@ const LogisticsPage = ({ openExternalPortal }) => {
             <FormControl fullWidth margin="normal">
               <InputLabel>Vehicle *</InputLabel>
               <Select
-                {...registerMaintenance('vehicle_plate_number', { required: true })}
+                {...registerMaintenance('vehicle_id', { required: true })}
                 label="Vehicle"
               >
                 {vehicles.map((vehicle) => (
-                  <MenuItem key={vehicle.id} value={vehicle.plate_number}>
+                  <MenuItem key={vehicle.id} value={vehicle.id}>
                     {vehicle.plate_number} - {vehicle.vehicle_type}
                   </MenuItem>
                 ))}
