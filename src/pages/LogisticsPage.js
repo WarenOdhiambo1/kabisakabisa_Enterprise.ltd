@@ -61,9 +61,9 @@ const LogisticsPage = ({ openExternalPortal }) => {
     () => dataAPI.getPageData('logistics')
   );
 
-  const vehicles = pageData?.vehicles || [];
-  const allTrips = pageData?.trips || [];
-  const maintenance = pageData?.maintenance || [];
+  const vehicles = useMemo(() => pageData?.vehicles || [], [pageData?.vehicles]);
+  const allTrips = useMemo(() => pageData?.trips || [], [pageData?.trips]);
+  const maintenance = useMemo(() => pageData?.maintenance || [], [pageData?.maintenance]);
   
   // Sort trips by date (newest first) and filter by selected vehicle
   const trips = useMemo(() => {
