@@ -129,6 +129,7 @@ export const logisticsAPI = {
   getTrips: (params) => api.get('/logistics/trips', { params }).then(res => res.data),
   createTrip: (data) => api.post('/logistics/trips', data).then(res => res.data),
   updateTrip: (id, data) => api.put(`/logistics/trips/${id}`, data).then(res => res.data),
+  getAllMaintenance: () => api.get('/logistics/maintenance').then(res => res.data),
   getMaintenance: (vehicleId) => api.get(`/logistics/maintenance/${vehicleId}`).then(res => res.data),
   createMaintenance: (data) => api.post('/logistics/maintenance', data).then(res => res.data),
 };
@@ -310,7 +311,7 @@ export const dataAPI = {
           const [vehicles, trips, maintenance] = await Promise.all([
             logisticsAPI.getVehicles().catch(() => []),
             logisticsAPI.getTrips(params).catch(() => []),
-genericDataAPI.getAll('Vehicle_Maintenance').catch(() => [])
+            logisticsAPI.getAllMaintenance().catch(() => [])
           ]);
           return { vehicles, trips, maintenance };
 
