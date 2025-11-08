@@ -308,9 +308,9 @@ export const dataAPI = {
 
         case 'logistics':
           const [vehicles, trips, maintenance] = await Promise.all([
-            logisticsAPI.getVehicles().catch(() => []),
-            logisticsAPI.getTrips(params).catch(() => []),
-            Promise.resolve([]) // Maintenance data would be fetched per vehicle
+            genericDataAPI.getAll('Vehicles').catch(() => []),
+            genericDataAPI.getAll('Trips').catch(() => []),
+            genericDataAPI.getAll('Vehicle_Maintenance').catch(() => [])
           ]);
           return { vehicles, trips, maintenance };
 
