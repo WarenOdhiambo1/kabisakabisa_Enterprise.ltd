@@ -73,7 +73,9 @@ const LogisticsPage = ({ openExternalPortal }) => {
       const selectedVehicle = vehicles.find(v => v.id === selectedVehicleForTrips);
       if (selectedVehicle) {
         filteredTrips = filteredTrips.filter(trip => 
-          trip.vehicle_plate_number === selectedVehicle.plate_number
+          trip.vehicle_plate_number === selectedVehicle.plate_number ||
+          trip.vehicle === selectedVehicle.plate_number ||
+          trip.vehicle_id === selectedVehicleForTrips
         );
       }
     }
@@ -491,7 +493,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
                     return (
                       <TableRow key={trip.id}>
                         <TableCell>{trip.trip_date ? new Date(trip.trip_date).toLocaleDateString() : 'N/A'}</TableCell>
-                        <TableCell>{trip.vehicle_plate_number || 'N/A'}</TableCell>
+                        <TableCell>{trip.vehicle_plate_number || trip.vehicle || 'N/A'}</TableCell>
                         <TableCell>{trip.destination || 'N/A'}</TableCell>
                         <TableCell>{trip.distance_km || 0}</TableCell>
                         <TableCell>{formatCurrency(trip.fuel_cost || 0)}</TableCell>
@@ -504,7 +506,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
                             {formatCurrency(profit)}
                           </Typography>
                         </TableCell>
-                        <TableCell>{trip.driver_name || 'N/A'}</TableCell>
+                        <TableCell>{trip.driver_name || trip.driver || 'N/A'}</TableCell>
                       </TableRow>
                     );
                   })}
@@ -547,7 +549,9 @@ const LogisticsPage = ({ openExternalPortal }) => {
                     <TableBody>
                       {vehicles.map((vehicle) => {
                         const vehicleTrips = allTrips.filter(t => 
-                          t.vehicle_plate_number === vehicle.plate_number
+                          t.vehicle_plate_number === vehicle.plate_number ||
+                          t.vehicle === vehicle.plate_number ||
+                          t.vehicle_id === vehicle.id
                         );
                         const revenue = vehicleTrips.reduce((sum, t) => sum + (t.amount_charged || 0), 0);
                         const profit = vehicleTrips.reduce((sum, t) => sum + ((t.amount_charged || 0) - (t.fuel_cost || 0)), 0);
@@ -605,7 +609,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
                       {maintenance.slice(0, 5).map((record) => (
                         <TableRow key={record.id}>
                           <TableCell>{record.maintenance_date ? new Date(record.maintenance_date).toLocaleDateString() : 'N/A'}</TableCell>
-                          <TableCell>{record.vehicle_plate_number || 'N/A'}</TableCell>
+                          <TableCell>{record.vehicle_plate_number || record.vehicle || 'N/A'}</TableCell>
                           <TableCell>{record.maintenance_type || 'N/A'}</TableCell>
                           <TableCell>{formatCurrency(record.cost || 0)}</TableCell>
                         </TableRow>
