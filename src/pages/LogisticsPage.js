@@ -65,15 +65,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
 
   const vehicles = useMemo(() => pageData?.vehicles || [], [pageData?.vehicles]);
   const allTrips = useMemo(() => pageData?.trips || [], [pageData?.trips]);
-  const maintenance = useMemo(() => {
-    const maintenanceData = pageData?.maintenance || [];
-    console.log('Raw maintenance data:', maintenanceData);
-    console.log('Maintenance data length:', maintenanceData.length);
-    if (maintenanceData.length > 0) {
-      console.log('Sample maintenance record:', maintenanceData[0]);
-    }
-    return maintenanceData;
-  }, [pageData?.maintenance]);
+  const maintenance = useMemo(() => pageData?.maintenance || [], [pageData?.maintenance]);
   
 
   
@@ -570,18 +562,15 @@ const LogisticsPage = ({ openExternalPortal }) => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {maintenance.map((record) => {
-                    console.log('Rendering maintenance record:', record);
-                    return (
-                      <TableRow key={record.id}>
-                        <TableCell>{record.maintenance_date ? new Date(record.maintenance_date).toLocaleDateString() : 'N/A'}</TableCell>
-                        <TableCell>{getVehiclePlateNumber(record.vehicle_id)}</TableCell>
-                        <TableCell>{record.maintenance_type || 'N/A'}</TableCell>
-                        <TableCell>{formatCurrency(record.cost || 0)}</TableCell>
-                        <TableCell>{record.description || 'N/A'}</TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {maintenance.map((record) => (
+                    <TableRow key={record.id}>
+                      <TableCell>{record.maintenance_date ? new Date(record.maintenance_date).toLocaleDateString() : 'N/A'}</TableCell>
+                      <TableCell>{getVehiclePlateNumber(record.vehicle_id)}</TableCell>
+                      <TableCell>{record.maintenance_type || 'N/A'}</TableCell>
+                      <TableCell>{formatCurrency(record.cost || 0)}</TableCell>
+                      <TableCell>{record.description || 'N/A'}</TableCell>
+                    </TableRow>
+                  ))}
                   {maintenance.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} align="center">
