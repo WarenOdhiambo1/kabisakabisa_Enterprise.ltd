@@ -35,7 +35,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import QuickUpload from '../components/QuickUpload';
 import HistoricalDataViewer from '../components/HistoricalDataViewer';
 import { useForm } from 'react-hook-form';
-import { logisticsAPI, hrAPI, dataAPI } from '../services/api';
+import { logisticsAPI, hrAPI, dataAPI, genericDataAPI } from '../services/api';
 import { formatCurrency } from '../theme';
 import toast from 'react-hot-toast';
 
@@ -61,22 +61,13 @@ const LogisticsPage = ({ openExternalPortal }) => {
     () => dataAPI.getPageData('logistics')
   );
   
-  // Separate maintenance query for debugging
-  const { data: maintenanceData } = useQuery(
-    'maintenanceData',
-    () => genericDataAPI.getAll('Vehicle_Maintenance'),
-    { enabled: true }
-  );
-  
-  console.log('Direct maintenance query:', maintenanceData);
+
 
   const vehicles = useMemo(() => pageData?.vehicles || [], [pageData?.vehicles]);
   const allTrips = useMemo(() => pageData?.trips || [], [pageData?.trips]);
   const maintenance = useMemo(() => pageData?.maintenance || [], [pageData?.maintenance]);
   
-  // Debug: Log maintenance data
-  console.log('Maintenance data:', maintenance);
-  console.log('Page data:', pageData);
+
   
   // Helper functions to resolve IDs to names
   const getVehiclePlateNumber = (vehicleId) => {
