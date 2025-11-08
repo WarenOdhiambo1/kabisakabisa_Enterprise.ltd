@@ -54,6 +54,8 @@ const LogisticsPage = ({ openExternalPortal }) => {
   const [tripDateFilter, setTripDateFilter] = useState('month');
   const [maintenanceDateFilter, setMaintenanceDateFilter] = useState('month');
   const [selectedVehicleForMaintenance, setSelectedVehicleForMaintenance] = useState('');
+  const [customTripDate, setCustomTripDate] = useState('');
+  const [customMaintenanceDate, setCustomMaintenanceDate] = useState('');
 
   const { register, handleSubmit, reset, setValue } = useForm();
   const { register: registerTrip, handleSubmit: handleTripSubmit, reset: resetTrip } = useForm();
@@ -86,6 +88,12 @@ const LogisticsPage = ({ openExternalPortal }) => {
           return maintenanceDate.getMonth() === now.getMonth() && maintenanceDate.getFullYear() === now.getFullYear();
         case 'year':
           return maintenanceDate.getFullYear() === now.getFullYear();
+        case 'custom':
+          if (customMaintenanceDate) {
+            const selectedDate = new Date(customMaintenanceDate);
+            return maintenanceDate.getMonth() === selectedDate.getMonth() && maintenanceDate.getFullYear() === selectedDate.getFullYear();
+          }
+          return true;
         default:
           return true;
       }
@@ -100,7 +108,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
     }
     
     return data.sort((a, b) => new Date(b.maintenance_date) - new Date(a.maintenance_date));
-  }, [pageData?.maintenance, maintenanceDateFilter, selectedVehicleForMaintenance]);
+  }, [pageData?.maintenance, maintenanceDateFilter, selectedVehicleForMaintenance, customMaintenanceDate]);
   
 
   
@@ -135,6 +143,12 @@ const LogisticsPage = ({ openExternalPortal }) => {
           return tripDate.getMonth() === now.getMonth() && tripDate.getFullYear() === now.getFullYear();
         case 'year':
           return tripDate.getFullYear() === now.getFullYear();
+        case 'custom':
+          if (customTripDate) {
+            const selectedDate = new Date(customTripDate);
+            return tripDate.getMonth() === selectedDate.getMonth() && tripDate.getFullYear() === selectedDate.getFullYear();
+          }
+          return true;
         default:
           return true;
       }
@@ -152,7 +166,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
     }
     
     return filteredTrips.sort((a, b) => new Date(b.trip_date) - new Date(a.trip_date));
-  }, [allTrips, selectedVehicleForTrips, vehicles, tripDateFilter]);
+  }, [allTrips, selectedVehicleForTrips, vehicles, tripDateFilter, customTripDate]);
   
   // Filter vehicles by search
   const filteredVehicles = useMemo(() => {
@@ -535,9 +549,19 @@ const LogisticsPage = ({ openExternalPortal }) => {
                     <MenuItem value="week">This Week</MenuItem>
                     <MenuItem value="month">This Month</MenuItem>
                     <MenuItem value="year">This Year</MenuItem>
+                    <MenuItem value="custom">Custom Month</MenuItem>
                     <MenuItem value="all">All Time</MenuItem>
                   </Select>
                 </FormControl>
+                {tripDateFilter === 'custom' && (
+                  <TextField
+                    size="small"
+                    type="month"
+                    value={customTripDate}
+                    onChange={(e) => setCustomTripDate(e.target.value)}
+                    sx={{ minWidth: 150 }}
+                  />
+                )}
                 <FormControl size="small" sx={{ minWidth: 150 }}>
                   <InputLabel>Vehicle</InputLabel>
                   <Select
@@ -632,9 +656,19 @@ const LogisticsPage = ({ openExternalPortal }) => {
                     <MenuItem value="week">This Week</MenuItem>
                     <MenuItem value="month">This Month</MenuItem>
                     <MenuItem value="year">This Year</MenuItem>
+                    <MenuItem value="custom">Custom Month</MenuItem>
                     <MenuItem value="all">All Time</MenuItem>
                   </Select>
                 </FormControl>
+                {maintenanceDateFilter === 'custom' && (
+                  <TextField
+                    size="small"
+                    type="month"
+                    value={customMaintenanceDate}
+                    onChange={(e) => setCustomMaintenanceDate(e.target.value)}
+                    sx={{ minWidth: 150 }}
+                  />
+                )}
                 <FormControl size="small" sx={{ minWidth: 150 }}>
                   <InputLabel>Vehicle</InputLabel>
                   <Select
