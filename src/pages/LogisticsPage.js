@@ -218,11 +218,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
 
   const drivers = employees.filter(emp => emp.role === 'logistics');
   
-  // Get driver name from employee data
-  const getDriverName = (driverId) => {
-    const driver = employees.find(emp => emp.id === driverId);
-    return driver?.full_name || 'N/A';
-  };
+
 
   if (isLoading) {
     return (
