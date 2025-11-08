@@ -372,6 +372,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
         <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
           <Tab label="Vehicles" />
           <Tab label="Trips" />
+          <Tab label="Maintenance" />
           <Tab label="Performance" />
         </Tabs>
       </Box>
@@ -538,8 +539,52 @@ const LogisticsPage = ({ openExternalPortal }) => {
         </Card>
       )}
 
-      {/* Performance Tab */}
+      {/* Maintenance Tab */}
       {activeTab === 2 && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Maintenance Records
+            </Typography>
+            <TableContainer component={Paper}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Vehicle</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell>Cost</TableCell>
+                    <TableCell>Description</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {maintenance.map((record) => (
+                    <TableRow key={record.id}>
+                      <TableCell>{record.maintenance_date ? new Date(record.maintenance_date).toLocaleDateString() : 'N/A'}</TableCell>
+                      <TableCell>{getVehiclePlateNumber(record.vehicle_id)}</TableCell>
+                      <TableCell>{record.maintenance_type || 'N/A'}</TableCell>
+                      <TableCell>{formatCurrency(record.cost || 0)}</TableCell>
+                      <TableCell>{record.description || 'N/A'}</TableCell>
+                    </TableRow>
+                  ))}
+                  {maintenance.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        <Typography color="text.secondary">
+                          No maintenance records
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Performance Tab */}
+      {activeTab === 3 && (
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <Card>
@@ -604,7 +649,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Maintenance Records
+                  Maintenance Summary
                 </Typography>
                 <TableContainer>
                   <Table size="small">
