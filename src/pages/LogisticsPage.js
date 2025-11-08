@@ -57,14 +57,13 @@ const LogisticsPage = ({ openExternalPortal }) => {
 
   // Queries
   const { data: pageData, isLoading, error } = useQuery(
-    'logisticsAllData',
-    () => dataAPI.get('/data/logistics/all-data')
+    'logisticsPageData',
+    () => dataAPI.getPageData('logistics')
   );
 
-  const vehicles = useMemo(() => pageData?.data?.vehicles || [], [pageData?.data?.vehicles]);
-  const allTrips = useMemo(() => pageData?.data?.trips || [], [pageData?.data?.trips]);
-  const maintenance = useMemo(() => pageData?.data?.maintenance || [], [pageData?.data?.maintenance]);
-  const stats = useMemo(() => pageData?.data?.stats || {}, [pageData?.data?.stats]);
+  const vehicles = useMemo(() => pageData?.vehicles || [], [pageData?.vehicles]);
+  const allTrips = useMemo(() => pageData?.trips || [], [pageData?.trips]);
+  const maintenance = useMemo(() => pageData?.maintenance || [], [pageData?.maintenance]);
   
   // Sort trips by date (newest first) and filter by selected vehicle
   const trips = useMemo(() => {
@@ -211,11 +210,11 @@ const LogisticsPage = ({ openExternalPortal }) => {
     handleNtsaMenuClose();
   };
 
-  // Use calculated statistics from backend
-  const totalTrips = stats.totalTrips || 0;
-  const totalRevenue = stats.totalRevenue || 0;
-  const totalProfit = stats.totalProfit || 0;
-  const activeVehicles = stats.activeVehicles || 0;
+  // Calculate statistics
+  const totalTrips = allTrips.length;
+  const totalRevenue = allTrips.reduce((sum, trip) => sum + (parseFloat(trip.amount_charged) || 0), 0);
+  const totalProfit = allTrips.reduce((sum, trip) => sum + ((parseFloat(trip.amount_charged) || 0) - (parseFloat(trip.fuel_cost) || 0)), 0);
+  const activeVehicles = vehicles.filter(v => v.status === 'active' || !v.status).length;
 
   const drivers = employees.filter(emp => emp.role === 'logistics');
   
