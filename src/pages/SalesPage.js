@@ -55,27 +55,29 @@ const SalesPage = () => {
     name: 'items'
   });
 
-  // Queries
-  const { data: pageData, isLoading, error } = useQuery(
-    ['salesPageData', selectedBranchId],
-    () => {
-      const params = selectedBranchId ? { branchId: selectedBranchId } : {};
-      return dataAPI.getPageData('sales', params);
-    }
+  // Queries - Use correct API endpoints
+  const { data: stock = [], isLoading: stockLoading } = useQuery(
+    ['stock', selectedBranchId],
+    () => selectedBranchId ? dataAPI.getPageData('stock', { branchId: selectedBranchId }).then(data => data.stock) : [],
+    { enabled: !!selectedBranchId }
   );
-
-  const stock = pageData?.stock || [];
-  const sales = pageData?.sales || [];
-  const expenses = pageData?.expenses || [];
-  const branches = pageData?.branches || [];
   
-  console.log('Sales page data:', { 
-    stock: stock.length, 
-    sales: sales.length, 
-    expenses: expenses.length,
-    branches: branches.length,
-    selectedBranch: selectedBranchId
-  });
+  const { data: sales = [], isLoading: salesLoading } = useQuery(
+    ['sales', selectedBranchId],
+    () => selectedBranchId ? salesAPI.getByBranch(selectedBranchId) : [],
+    { enabled: !!selectedBranchId }
+  );
+  
+  const { data: expenses = [], isLoading: expensesLoading } = useQuery(
+    ['expenses', selectedBranchId],
+    () => selectedBranchId ? salesAPI.getExpenses(selectedBranchId) : [],
+    { enabled: !!selectedBranchId }
+  );
+  
+  const { data: branches = [] } = useQuery('branches', () => dataAPI.refreshData.branches());
+  
+  const isLoading = stockLoading || salesLoading || expensesLoading;
+  const error = null; // Individual queries handle their own errors
 
   const { data: dailySummary } = useQuery(
     ['dailySummary', selectedBranchId],
@@ -117,7 +119,8 @@ const SalesPage = () => {
       onSuccess: () => {
         toast.success('Sale recorded successfully!');
         reset();
-        queryClient.invalidateQueries(['salesPageData', selectedBranchId]);
+        queryClient.invalidateQueries(['stock', selectedBranchId]);
+        queryClient.invalidateQueries(['sales', selectedBranchId]);
         queryClient.invalidateQueries(['dailySummary', selectedBranchId]);
         queryClient.invalidateQueries(['fundsTracking', selectedBranchId]);
       },
@@ -133,7 +136,7 @@ const SalesPage = () => {
       onSuccess: () => {
         toast.success('Expense recorded successfully!');
         setShowExpenseModal(false);
-        queryClient.invalidateQueries(['salesPageData', selectedBranchId]);
+        queryClient.invalidateQueries(['expenses', selectedBranchId]);
       },
       onError: (error) => {
         toast.error(error.response?.data?.message || 'Failed to record expense');

@@ -43,7 +43,11 @@ const AccountingIntegration = () => {
 
   const checkXeroStatus = async () => {
     try {
-      const response = await axios.get('/auth/xero/status');
+      const response = await axios.get('/api/xero/status', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('accessToken') || ''}`
+        }
+      });
       setXeroStatus({ connected: response.data.connected, loading: false });
     } catch (error) {
       console.error('Error checking Xero status:', error);
@@ -54,7 +58,11 @@ const AccountingIntegration = () => {
   const connectToXero = async () => {
     try {
       setXeroStatus(prev => ({ ...prev, loading: true }));
-      const response = await axios.get('/auth/xero/authorize');
+      const response = await axios.get('/api/xero/authorize', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('accessToken') || ''}`
+        }
+      });
       window.location.href = response.data.authUrl;
     } catch (error) {
       console.error('Error connecting to Xero:', error);
@@ -107,6 +115,39 @@ const AccountingIntegration = () => {
       },
       onError: (error) => {
         toast.error(error.response?.data?.message || 'Bulk sync failed');
+      }
+    }
+  );
+
+  const syncToXeroMutation = useMutation(
+    (data) => axios.post('/api/xero/sync-invoices', data, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('accessToken') || ''}`
+      }
+    }),
+    {
+      onSuccess: (response) => {
+        toast.success(response.data.message);
+        setShowSyncDialog(false);
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Xero sync failed');
+      }
+    }
+  );
+
+  const syncContactsToXeroMutation = useMutation(
+    () => axios.post('/api/xero/sync-contacts', {}, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('accessToken') || ''}`
+      }
+    }),
+    {
+      onSuccess: (response) => {
+        toast.success(response.data.message);
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Contact sync failed');
       }
     }
   );
@@ -259,6 +300,24 @@ const AccountingIntegration = () => {
         </Button>
         <Button
           variant="outlined"
+          startIcon={<CloudSync />}
+          onClick={() => syncContactsToXeroMutation.mutate()}
+          disabled={!xeroStatus.connected || syncContactsToXeroMutation.isLoading}
+          color="secondary"
+        >
+          Sync Contacts to Xero
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<Link />}
+          onClick={() => setShowSyncDialog(true)}
+          disabled={!xeroStatus.connected}
+          color="secondary"
+        >
+          Sync Invoices to Xero
+        </Button>
+        <Button
+          variant="outlined"
           startIcon={<Assessment />}
           onClick={() => setShowReportDialog(true)}
         >
@@ -387,10 +446,10 @@ const AccountingIntegration = () => {
 
       {/* Sync Dialog */}
       <Dialog open={showSyncDialog} onClose={() => setShowSyncDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Sync to KRA eTIMS</DialogTitle>
+        <DialogTitle>Sync Invoices</DialogTitle>
         <DialogContent>
           <Alert severity="info" sx={{ mb: 2 }}>
-            Sync invoices to KRA eTIMS for tax compliance
+            Sync invoices to KRA eTIMS for tax compliance or to Xero for accounting
           </Alert>
           
           <TextField
@@ -419,10 +478,24 @@ const AccountingIntegration = () => {
               const dateTo = document.getElementById('dateTo').value;
               handleBulkSync(dateFrom, dateTo);
             }}
-            variant="contained"
-            disabled={bulkSyncMutation.isLoading}
+            variant="outlined"
+            disabled={bulkSyncMutation.isLoading || !currentSettings.etims_enabled}
+            startIcon={<Sync />}
           >
-            Bulk Sync
+            Sync to eTIMS
+          </Button>
+          <Button 
+            onClick={() => {
+              const dateFrom = document.getElementById('dateFrom').value;
+              const dateTo = document.getElementById('dateTo').value;
+              syncToXeroMutation.mutate({ dateFrom, dateTo });
+            }}
+            variant="contained"
+            disabled={syncToXeroMutation.isLoading || !xeroStatus.connected}
+            startIcon={<CloudSync />}
+            color="secondary"
+          >
+            Sync to Xero
           </Button>
         </DialogActions>
       </Dialog>

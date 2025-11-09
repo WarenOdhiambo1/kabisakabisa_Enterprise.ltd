@@ -107,6 +107,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
   };
   
   const getDriverName = (driverId) => {
+    if (!driverId) return 'N/A';
     if (Array.isArray(driverId)) driverId = driverId[0];
     const driver = employees.find(emp => emp.id === driverId);
     return driver?.full_name || 'N/A';
@@ -456,7 +457,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
                       <TableCell>{vehicle.plate_number}</TableCell>
                       <TableCell>{vehicle.vehicle_type}</TableCell>
                       <TableCell>{vehicle.purchase_date ? new Date(vehicle.purchase_date).toLocaleDateString() : 'N/A'}</TableCell>
-                      <TableCell>{vehicle.current_branch_name || 'Unassigned'}</TableCell>
+                      <TableCell>{vehicle.current_branch_id ? 'Assigned' : 'Unassigned'}</TableCell>
                       <TableCell>
                         <Chip 
                           label={vehicle.status || 'active'}

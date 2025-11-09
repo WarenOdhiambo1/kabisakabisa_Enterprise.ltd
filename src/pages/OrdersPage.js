@@ -60,12 +60,10 @@ const OrdersPage = () => {
   const { register: registerDelivery, handleSubmit: handleDeliverySubmit, reset: resetDelivery } = useForm();
 
   // Queries
-  const { data: pageData, isLoading, error } = useQuery(
+  const { data: orders = [], isLoading, error } = useQuery(
     'ordersPageData',
-    () => dataAPI.getPageData('orders')
+    () => ordersAPI.getAll()
   );
-
-  const orders = pageData || [];
   
   const { data: branches = [] } = useQuery('branches', () => branchesAPI.getAll());
 
@@ -375,6 +373,15 @@ const OrdersPage = () => {
                       </TableCell>
                     </TableRow>
                   ))}
+                {orders.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center">
+                      <Typography color="text.secondary" sx={{ py: 4 }}>
+                        No orders found. Create your first purchase order to get started.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </TableContainer>

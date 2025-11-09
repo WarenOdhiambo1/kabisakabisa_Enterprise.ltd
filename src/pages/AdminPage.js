@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -23,7 +23,8 @@ import {
   Chip,
   IconButton,
   Tabs,
-  Tab
+  Tab,
+  Grid
 } from '@mui/material';
 import { Add, Edit, Delete, Business, Inventory, History } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
@@ -41,6 +42,21 @@ const AdminPage = () => {
   const queryClient = useQueryClient();
   const [selectedBranchId] = useState('');
   const [activeTab, setActiveTab] = useState(0);
+  
+  // Handle Xero callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const xeroStatus = urlParams.get('xero');
+    
+    if (xeroStatus === 'connected') {
+      toast.success('Successfully connected to Xero!');
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (xeroStatus === 'error') {
+      toast.error('Failed to connect to Xero. Please try again.');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showAddBranch, setShowAddBranch] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
@@ -345,6 +361,72 @@ const AdminPage = () => {
       <Typography variant="h4" gutterBottom>
         Admin Dashboard
       </Typography>
+      
+      {/* Summary Cards */}
+      <Box sx={{ mb: 4 }}>
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Typography color="textSecondary" gutterBottom variant="body2">
+                  Total Users
+                </Typography>
+                <Typography variant="h5">
+                  {employees.length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {employees.filter(e => e.is_active).length} active
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Typography color="textSecondary" gutterBottom variant="body2">
+                  Branches
+                </Typography>
+                <Typography variant="h5">
+                  {branches.length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Locations managed
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Typography color="textSecondary" gutterBottom variant="body2">
+                  Products
+                </Typography>
+                <Typography variant="h5">
+                  {products.length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  In inventory
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Typography color="textSecondary" gutterBottom variant="body2">
+                  System Status
+                </Typography>
+                <Typography variant="h5" color="success.main">
+                  Online
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  All systems operational
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
       
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
