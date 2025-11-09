@@ -26,7 +26,6 @@ import {
   Chip
 } from '@mui/material';
 import { Add, Delete, Visibility, Receipt, Business } from '@mui/icons-material';
-import { useParams } from 'react-router-dom';
 import QuickUpload from '../components/QuickUpload';
 
 import { useQuery, useMutation, useQueryClient } from 'react-query';
