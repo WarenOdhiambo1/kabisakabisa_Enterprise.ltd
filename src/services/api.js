@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app';
 
 // Create axios instance
 const api = axios.create({
@@ -48,7 +48,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = Cookies.get('refreshToken');
         if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+          const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
             refreshToken
           });
 
@@ -78,36 +78,36 @@ api.interceptors.response.use(
 
 // Auth API
 export const authAPI = {
-  register: (data) => api.post('/auth/register', data).then(res => res.data),
-  login: (credentials) => api.post('/auth/login', credentials).then(res => res.data),
-  setupMFA: (userId) => api.post('/auth/setup-mfa', { userId }).then(res => res.data),
-  verifyMFA: (userId, token) => api.post('/auth/verify-mfa', { userId, token }).then(res => res.data),
-  refreshToken: (refreshToken) => api.post('/auth/refresh', { refreshToken }).then(res => res.data),
-  changePassword: (data) => api.post('/auth/change-password', data).then(res => res.data),
-  logout: () => api.post('/auth/logout').then(res => res.data),
+  register: (data) => api.post('/api/auth/register', data).then(res => res.data),
+  login: (credentials) => api.post('/api/auth/login', credentials).then(res => res.data),
+  setupMFA: (userId) => api.post('/api/auth/setup-mfa', { userId }).then(res => res.data),
+  verifyMFA: (userId, token) => api.post('/api/auth/verify-mfa', { userId, token }).then(res => res.data),
+  refreshToken: (refreshToken) => api.post('/api/auth/refresh', { refreshToken }).then(res => res.data),
+  changePassword: (data) => api.post('/api/auth/change-password', data).then(res => res.data),
+  logout: () => api.post('/api/auth/logout').then(res => res.data),
 };
 
 // Branches API
 export const branchesAPI = {
-  getPublic: () => api.get('/branches/public').then(res => res.data),
-  getAll: () => api.get('/branches').then(res => res.data),
-  getById: (id) => api.get(`/branches/${id}`).then(res => res.data),
-  create: (data) => api.post('/branches', data).then(res => res.data),
-  update: (id, data) => api.put(`/branches/${id}`, data).then(res => res.data),
-  delete: (id) => api.delete(`/branches/${id}`).then(res => res.data),
+  getPublic: () => api.get('/api/branches/public').then(res => res.data),
+  getAll: () => api.get('/api/branches').then(res => res.data),
+  getById: (id) => api.get(`/api/branches/${id}`).then(res => res.data),
+  create: (data) => api.post('/api/branches', data).then(res => res.data),
+  update: (id, data) => api.put(`/api/branches/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/api/branches/${id}`).then(res => res.data),
 };
 
 // Stock API
 export const stockAPI = {
-  getByBranch: (branchId) => api.get(`/stock/branch/${branchId}`).then(res => res.data),
-  addStock: (branchId, data) => api.post(`/stock/branch/${branchId}`, data).then(res => res.data),
-  addQuantity: (stockId, quantity) => api.patch(`/stock/${stockId}/add-quantity`, { quantity }).then(res => res.data),
-  transfer: (data) => api.post('/stock/transfer', data).then(res => res.data),
-  getPendingTransfers: (branchId) => api.get(`/stock/transfers/pending/${branchId}`).then(res => res.data),
-  approveTransfer: (transferId) => api.patch(`/stock/transfers/${transferId}/approve`).then(res => res.data),
-  rejectTransfer: (transferId) => api.patch(`/stock/transfers/${transferId}/reject`).then(res => res.data),
-  updateStock: (stockId, data) => api.put(`/stock/${stockId}`, data).then(res => res.data),
-  deleteStock: (stockId) => api.delete(`/stock/${stockId}`).then(res => res.data),
+  getByBranch: (branchId) => api.get(`/api/stock/branch/${branchId}`).then(res => res.data),
+  addStock: (branchId, data) => api.post(`/api/stock/branch/${branchId}`, data).then(res => res.data),
+  addQuantity: (stockId, quantity) => api.patch(`/api/stock/${stockId}/add-quantity`, { quantity }).then(res => res.data),
+  transfer: (data) => api.post('/api/stock/transfer', data).then(res => res.data),
+  getPendingTransfers: (branchId) => api.get(`/api/stock/transfers/pending/${branchId}`).then(res => res.data),
+  approveTransfer: (transferId) => api.patch(`/api/stock/transfers/${transferId}/approve`).then(res => res.data),
+  rejectTransfer: (transferId) => api.patch(`/api/stock/transfers/${transferId}/reject`).then(res => res.data),
+  updateStock: (stockId, data) => api.put(`/api/stock/${stockId}`, data).then(res => res.data),
+  deleteStock: (stockId) => api.delete(`/api/stock/${stockId}`).then(res => res.data),
 };
 
 // Sales API
@@ -152,10 +152,10 @@ export const ordersAPI = {
 
 // HR API
 export const hrAPI = {
-  getEmployees: (params) => api.get('/hr/employees', { params }).then(res => res.data),
-  createEmployee: (data) => api.post('/hr/employees', data).then(res => res.data),
-  updateEmployee: (id, data) => api.put(`/hr/employees/${id}`, data).then(res => res.data),
-  deleteEmployee: (id) => api.delete(`/hr/employees/${id}`).then(res => res.data),
+  getEmployees: (params) => api.get('/api/hr/employees', { params }).then(res => res.data),
+  createEmployee: (data) => api.post('/api/hr/employees', data).then(res => res.data),
+  updateEmployee: (id, data) => api.put(`/api/hr/employees/${id}`, data).then(res => res.data),
+  deleteEmployee: (id) => api.delete(`/api/hr/employees/${id}`).then(res => res.data),
   generatePayroll: (data) => api.post('/hr/payroll/generate', data).then(res => res.data),
   getPayroll: (params) => api.get('/hr/payroll', { params }).then(res => res.data),
   sendPayslips: (payrollIds) => api.post('/hr/payroll/send-payslips', { payroll_ids: payrollIds }).then(res => res.data),
@@ -185,9 +185,9 @@ export const managerAPI = {
 
 // Admin API
 export const adminAPI = {
-  getOverview: () => api.get('/admin/overview').then(res => res.data),
-  getProducts: () => api.get('/admin/products').then(res => res.data),
-  createProduct: (data) => api.post('/admin/products', data).then(res => res.data),
+  getOverview: () => api.get('/api/admin/overview').then(res => res.data),
+  getProducts: () => api.get('/api/admin/products').then(res => res.data),
+  createProduct: (data) => api.post('/api/admin/products', data).then(res => res.data),
 };
 
 export const accountingAPI = {
@@ -255,7 +255,7 @@ export const dataAPI = {
       switch (page) {
         case 'admin':
           const queryString = new URLSearchParams(params).toString();
-          const adminUrl = `/data/page/admin${queryString ? `?${queryString}` : ''}`;
+          const adminUrl = `/api/data/page/admin${queryString ? `?${queryString}` : ''}`;
           return api.get(adminUrl).then(res => res.data);
 
         case 'manager':
@@ -285,7 +285,7 @@ export const dataAPI = {
 
         case 'sales':
           const salesParams = new URLSearchParams(params).toString();
-          const url = `/data/page/sales${salesParams ? `?${salesParams}` : ''}`;
+          const url = `/api/data/page/sales${salesParams ? `?${salesParams}` : ''}`;
           return api.get(url).then(res => res.data);
 
         case 'stock':
