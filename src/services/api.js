@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app';
 
 // Create axios instance
 const api = axios.create({
@@ -48,7 +48,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = Cookies.get('refreshToken');
         if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+          const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
             refreshToken
           });
 
@@ -78,23 +78,23 @@ api.interceptors.response.use(
 
 // Auth API
 export const authAPI = {
-  register: (data) => api.post('/auth/register', data).then(res => res.data),
-  login: (credentials) => api.post('/auth/login', credentials).then(res => res.data),
-  setupMFA: (userId) => api.post('/auth/setup-mfa', { userId }).then(res => res.data),
-  verifyMFA: (userId, token) => api.post('/auth/verify-mfa', { userId, token }).then(res => res.data),
-  refreshToken: (refreshToken) => api.post('/auth/refresh', { refreshToken }).then(res => res.data),
-  changePassword: (data) => api.post('/auth/change-password', data).then(res => res.data),
-  logout: () => api.post('/auth/logout').then(res => res.data),
+  register: (data) => api.post('/api/auth/register', data).then(res => res.data),
+  login: (credentials) => api.post('/api/auth/login', credentials).then(res => res.data),
+  setupMFA: (userId) => api.post('/api/auth/setup-mfa', { userId }).then(res => res.data),
+  verifyMFA: (userId, token) => api.post('/api/auth/verify-mfa', { userId, token }).then(res => res.data),
+  refreshToken: (refreshToken) => api.post('/api/auth/refresh', { refreshToken }).then(res => res.data),
+  changePassword: (data) => api.post('/api/auth/change-password', data).then(res => res.data),
+  logout: () => api.post('/api/auth/logout').then(res => res.data),
 };
 
 // Branches API
 export const branchesAPI = {
-  getPublic: () => api.get('/branches/public').then(res => res.data),
-  getAll: () => api.get('/branches').then(res => res.data),
-  getById: (id) => api.get(`/branches/${id}`).then(res => res.data),
-  create: (data) => api.post('/branches', data).then(res => res.data),
-  update: (id, data) => api.put(`/branches/${id}`, data).then(res => res.data),
-  delete: (id) => api.delete(`/branches/${id}`).then(res => res.data),
+  getPublic: () => api.get('/api/branches/public').then(res => res.data),
+  getAll: () => api.get('/api/branches').then(res => res.data),
+  getById: (id) => api.get(`/api/branches/${id}`).then(res => res.data),
+  create: (data) => api.post('/api/branches', data).then(res => res.data),
+  update: (id, data) => api.put(`/api/branches/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/api/branches/${id}`).then(res => res.data),
 };
 
 // Stock API
