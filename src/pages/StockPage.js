@@ -52,7 +52,7 @@ const StockPage = () => {
   // Queries
   const { data: pageData, isLoading, error } = useQuery(
     ['stockPageData', branchId],
-    () => dataAPI.getPageData('stock', branchId),
+    () => dataAPI.getPageData('stock', { branchId }),
     { enabled: !!branchId }
   );
 
@@ -369,7 +369,7 @@ const StockPage = () => {
                   {stock.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>{item.product_id}</TableCell>
-                      <TableCell>{item.product_name}</TableCell>
+                      <TableCell>{(item.product_name || '').toLowerCase()}</TableCell>
                       <TableCell>
                         <Chip 
                           label={item.quantity_available}
@@ -429,7 +429,7 @@ const StockPage = () => {
                 <TableBody>
                   {lowStockItems.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell>{item.product_name}</TableCell>
+                      <TableCell>{(item.product_name || '').toLowerCase()}</TableCell>
                       <TableCell>
                         <Chip label={item.quantity_available} color="error" size="small" />
                       </TableCell>
@@ -584,7 +584,7 @@ const StockPage = () => {
               >
                 {stock.map((item) => (
                   <MenuItem key={item.product_id} value={item.product_id}>
-                    {item.product_name} (Available: {item.quantity_available})
+                    {(item.product_name || '').toLowerCase()} (Available: {item.quantity_available})
                   </MenuItem>
                 ))}
               </Select>

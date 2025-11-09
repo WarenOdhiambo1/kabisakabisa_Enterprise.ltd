@@ -58,7 +58,7 @@ const SalesPage = () => {
   // Queries - Use correct API endpoints
   const { data: stock = [], isLoading: stockLoading } = useQuery(
     ['stock', selectedBranchId],
-    () => selectedBranchId ? dataAPI.getPageData('stock', { branchId: selectedBranchId }).then(data => data.stock) : [],
+    () => selectedBranchId ? dataAPI.refreshData.stock(selectedBranchId) : [],
     { enabled: !!selectedBranchId }
   );
   
@@ -411,7 +411,7 @@ const SalesPage = () => {
                         >
                           {stock.map((item) => (
                             <MenuItem key={item.product_id} value={item.product_id}>
-                              {item.product_name} (Available: {item.quantity_available})
+                              {(item.product_name || '').toLowerCase()} (Available: {item.quantity_available})
                             </MenuItem>
                           ))}
                         </Select>
@@ -566,7 +566,7 @@ const SalesPage = () => {
               <TableBody>
                 {stock.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell>{item.product_name}</TableCell>
+                    <TableCell>{(item.product_name || '').toLowerCase()}</TableCell>
                     <TableCell>
                       <Chip 
                         label={item.quantity_available}

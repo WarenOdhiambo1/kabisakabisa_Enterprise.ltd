@@ -39,6 +39,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import QuickUpload from '../components/QuickUpload';
 import HistoricalDataViewer from '../components/HistoricalDataViewer';
 import { useForm } from 'react-hook-form';
@@ -47,6 +48,7 @@ import { formatCurrency } from '../theme';
 import toast from 'react-hot-toast';
 
 const HRPage = () => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
@@ -69,7 +71,20 @@ const HRPage = () => {
     () => dataAPI.getPageData('hr')
   );
 
-  const allEmployees = useMemo(() => pageData?.employees || [], [pageData?.employees]);
+  // Get user's branch employees if user is manager
+  const { data: branchEmployees } = useQuery(
+    ['branchEmployees', user?.branchId],
+    () => user?.branchId ? hrAPI.getEmployees({ branchId: user.branchId }) : [],
+    { enabled: !!user?.branchId && user?.role === 'manager' }
+  );
+
+  const allEmployees = useMemo(() => {
+    // If user is manager, show only their branch employees
+    if (user?.role === 'manager' && branchEmployees) {
+      return branchEmployees;
+    }
+    return pageData?.employees || [];
+  }, [pageData?.employees, branchEmployees, user?.role]);
   const allPayroll = useMemo(() => pageData?.payroll || [], [pageData?.payroll]);
   
   const { data: branches = [] } = useQuery('branches', () => branchesAPI.getAll());
@@ -524,8 +539,8 @@ const HRPage = () => {
                     const employeeBranch = branches.find(b => b.id === employee.branch_id);
                     return (
                       <TableRow key={employee.id}>
-                        <TableCell>{employee.full_name}</TableCell>
-                        <TableCell>{employee.email}</TableCell>
+                        <TableCell>{(employee.full_name || '').toLowerCase()}</TableCell>
+                        <TableCell>{(employee.email || '').toLowerCase()}</TableCell>
                         <TableCell>{employee.phone || 'N/A'}</TableCell>
                         <TableCell>
                           <Chip 
@@ -535,7 +550,7 @@ const HRPage = () => {
                             icon={employee.role === 'logistics' ? <LocalShipping /> : undefined}
                           />
                         </TableCell>
-                        <TableCell>{employeeBranch?.branch_name || 'No Branch'}</TableCell>
+                        <TableCell>{(employeeBranch?.branch_name || 'no branch').toLowerCase()}</TableCell>
                         <TableCell>{employee.salary ? formatCurrency(employee.salary) : 'N/A'}</TableCell>
                         <TableCell>{employee.hire_date ? new Date(employee.hire_date).toLocaleDateString() : 'N/A'}</TableCell>
                         <TableCell>

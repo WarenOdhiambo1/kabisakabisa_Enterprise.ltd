@@ -16,19 +16,26 @@ import {
   Chip,
   Tabs,
   Tab,
-  Button
+  Button,
+  Divider
 } from '@mui/material';
 import { 
   TrendingUp, 
   People, 
   Inventory, 
   Warning,
-  History
+  History,
+  Store,
+  LocalShipping,
+  ShoppingCart,
+  Assessment,
+  Business
 } from '@mui/icons-material';
 import HistoricalDataViewer from '../components/HistoricalDataViewer';
 import { useQuery } from 'react-query';
 import { useAuth } from '../contexts/AuthContext';
-import { managerAPI } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { dataAPI } from '../services/api';
 import { formatCurrency } from '../theme';
 import {
   LineChart,
@@ -45,15 +52,15 @@ import {
 
 const ManagerPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
   const [showHistoricalData, setShowHistoricalData] = useState(false);
 
   const { data: dashboardData, isLoading, error } = useQuery(
     ['managerDashboard', user?.branchId],
     () => {
-      console.log('Fetching manager dashboard for user:', user);
-      const branchId = user?.branchId || 'rec1XUFQQJxlwpX9T'; // Default to KISUMU branch for testing
-      return managerAPI.getDashboard(branchId);
+      const branchId = user?.branchId || 'rec1XUFQQJxlwpX9T';
+      return dataAPI.getPageData('manager', { branchId });
     },
     { enabled: !!user }
   );
@@ -108,9 +115,53 @@ const ManagerPage = () => {
 
   return (
     <Container maxWidth="xl" sx={{ mt: { xs: 2, md: 4 }, mb: { xs: 2, md: 4 }, px: { xs: 1, sm: 2 } }}>
-      <Typography variant="h4" gutterBottom>
-        Branch Management Dashboard
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ m: 0 }}>
+          Manager Dashboard
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Button
+            variant="outlined"
+            startIcon={<Store />}
+            onClick={() => navigate('/sales')}
+            size="small"
+          >
+            Sales
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<Inventory />}
+            onClick={() => navigate('/stock')}
+            size="small"
+          >
+            Stock
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<LocalShipping />}
+            onClick={() => navigate('/logistics')}
+            size="small"
+          >
+            Logistics
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<ShoppingCart />}
+            onClick={() => navigate('/orders')}
+            size="small"
+          >
+            Orders
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<People />}
+            onClick={() => navigate('/hr')}
+            size="small"
+          >
+            HR
+          </Button>
+        </Box>
+      </Box>
       
       {branch && (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -201,10 +252,10 @@ const ManagerPage = () => {
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-          <Tab label="Sales Overview" />
-          <Tab label="Staff Management" />
-          <Tab label="Inventory Status" />
-          <Tab label="Performance" />
+          <Tab label="Overview" />
+          <Tab label="Staff" />
+          <Tab label="Inventory" />
+          <Tab label="Quick Actions" />
         </Tabs>
       </Box>
 
@@ -357,41 +408,99 @@ const ManagerPage = () => {
 
       {activeTab === 3 && (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Performance Metrics
+                  Quick Actions & System Access
                 </Typography>
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Sales Target Achievement: 85%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Customer Satisfaction: 4.2/5
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Inventory Turnover: 12x/year
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Monthly Trends
-                </Typography>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={weeklyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="sales" stroke="#8884d8" />
-                  </LineChart>
-                </ResponsiveContainer>
+                <Divider sx={{ mb: 2 }} />
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      startIcon={<Store />}
+                      onClick={() => navigate('/sales')}
+                      sx={{ mb: 1 }}
+                    >
+                      Sales Management
+                    </Button>
+                    <Typography variant="caption" color="text.secondary">
+                      Record sales, view reports, manage transactions
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      startIcon={<Inventory />}
+                      onClick={() => navigate('/stock')}
+                      sx={{ mb: 1 }}
+                    >
+                      Stock Management
+                    </Button>
+                    <Typography variant="caption" color="text.secondary">
+                      Manage inventory, transfers, stock levels
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      startIcon={<LocalShipping />}
+                      onClick={() => navigate('/logistics')}
+                      sx={{ mb: 1 }}
+                    >
+                      Logistics
+                    </Button>
+                    <Typography variant="caption" color="text.secondary">
+                      Vehicle management, trips, maintenance
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      startIcon={<ShoppingCart />}
+                      onClick={() => navigate('/orders')}
+                      sx={{ mb: 1 }}
+                    >
+                      Purchase Orders
+                    </Button>
+                    <Typography variant="caption" color="text.secondary">
+                      Create orders, track deliveries, payments
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      startIcon={<People />}
+                      onClick={() => navigate('/hr')}
+                      sx={{ mb: 1 }}
+                    >
+                      HR Management
+                    </Button>
+                    <Typography variant="caption" color="text.secondary">
+                      Employee management, payroll, reports
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      startIcon={<Assessment />}
+                      onClick={() => navigate('/boss')}
+                      sx={{ mb: 1 }}
+                    >
+                      Reports & Analytics
+                    </Button>
+                    <Typography variant="caption" color="text.secondary">
+                      Business insights, performance metrics
+                    </Typography>
+                  </Grid>
+                </Grid>
               </CardContent>
             </Card>
           </Grid>

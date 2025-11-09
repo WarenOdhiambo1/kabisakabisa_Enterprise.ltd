@@ -78,7 +78,7 @@ const Navbar = ({ openExternalPortal }) => {
   const canAccessStock = ['admin', 'manager', 'boss'].includes(user?.role);
   const canAccessLogistics = ['logistics', 'manager', 'boss'].includes(user?.role);
   const canAccessOrders = ['admin', 'manager', 'boss'].includes(user?.role);
-  const canAccessHR = ['hr', 'boss'].includes(user?.role);
+  const canAccessHR = ['hr', 'manager', 'boss'].includes(user?.role);
   const canAccessBoss = user?.role === 'boss';
   const canAccessManager = user?.role === 'manager';
   const canAccessAdmin = user?.role === 'admin';
@@ -133,16 +133,7 @@ const Navbar = ({ openExternalPortal }) => {
             </Button>
           )}
 
-          {/* Data Management */}
-          {(canAccessAdmin || canAccessBoss) && (
-            <Button
-              color="inherit"
-              startIcon={<Storage />}
-              onClick={() => navigate('/data')}
-            >
-              Data
-            </Button>
-          )}
+
 
           {/* Sales Dropdown */}
           {canAccessSales && (
