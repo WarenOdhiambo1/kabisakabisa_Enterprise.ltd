@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Container,
   Typography,
@@ -26,10 +26,20 @@ import {
   IconButton,
   Chip,
   Tabs,
-  Tab
+  Tab,
+  InputAdornment,
+  Divider,
+  Alert,
+  Tooltip
 } from '@mui/material';
-import { Add, Edit, Delete, Payment, Email, People, History } from '@mui/icons-material';
+import { 
+  Add, Edit, Delete, Payment, Email, People, History, Search, Calculate, Send,
+  LocalShipping, DirectionsCar, AccountBalance, Business, Work, AdminPanelSettings,
+  Engineering, Store, ManageAccounts, Badge, Groups, PersonAdd, MonetizationOn,
+  Assessment, TrendingUp, Security, Verified
+} from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useNavigate } from 'react-router-dom';
 import QuickUpload from '../components/QuickUpload';
 import HistoricalDataViewer from '../components/HistoricalDataViewer';
 import { useForm } from 'react-hook-form';
@@ -39,11 +49,17 @@ import toast from 'react-hot-toast';
 
 const HRPage = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
   const [showAddEmployee, setShowAddEmployee] = useState(false);
   const [showGeneratePayroll, setShowGeneratePayroll] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [showHistoricalData, setShowHistoricalData] = useState(false);
+  const [employeeSearch, setEmployeeSearch] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedBranch, setSelectedBranch] = useState('');
+  const [payrollPeriod, setPayrollPeriod] = useState('');
+  const [selectedPayrollIds, setSelectedPayrollIds] = useState([]);
 
   const { register, handleSubmit, reset, setValue } = useForm();
   const { register: registerPayroll, handleSubmit: handlePayrollSubmit, reset: resetPayroll } = useForm();
@@ -54,10 +70,64 @@ const HRPage = () => {
     () => dataAPI.getPageData('hr')
   );
 
-  const employees = pageData?.employees || [];
-  const payroll = pageData?.payroll || [];
+  const allEmployees = pageData?.employees || [];
+  const allPayroll = pageData?.payroll || [];
   
   const { data: branches = [] } = useQuery('branches', () => branchesAPI.getAll());
+
+  // Filter employees based on search and filters
+  const employees = useMemo(() => {
+    let filtered = [...allEmployees];
+    
+    if (employeeSearch) {
+      filtered = filtered.filter(emp => 
+        emp.full_name?.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+        emp.email?.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+        emp.phone?.includes(employeeSearch)
+      );
+    }
+    
+    if (selectedRole) {
+      filtered = filtered.filter(emp => emp.role === selectedRole);
+    }
+    
+    if (selectedBranch) {
+      filtered = filtered.filter(emp => emp.branch_id === selectedBranch);
+    }
+    
+    return filtered.sort((a, b) => a.full_name?.localeCompare(b.full_name));
+  }, [allEmployees, employeeSearch, selectedRole, selectedBranch]);
+
+  // Filter payroll based on period
+  const payroll = useMemo(() => {
+    let filtered = [...allPayroll];
+    
+    if (payrollPeriod) {
+      const [year, month] = payrollPeriod.split('-');
+      filtered = filtered.filter(p => {
+        const periodStart = new Date(p.period_start);
+        return periodStart.getFullYear() === parseInt(year) && 
+               periodStart.getMonth() === parseInt(month) - 1;
+      });
+    }
+    
+    return filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }, [allPayroll, payrollPeriod]);
+
+  // Calculate payroll totals with auto-calculations
+  const payrollTotals = useMemo(() => {
+    const selectedPayroll = payroll.filter(p => selectedPayrollIds.includes(p.id));
+    const totalGross = selectedPayroll.reduce((sum, p) => sum + (parseFloat(p.gross_salary) || 0), 0);
+    const totalDeductions = selectedPayroll.reduce((sum, p) => sum + (parseFloat(p.deductions) || 0), 0);
+    const totalNet = selectedPayroll.reduce((sum, p) => sum + (parseFloat(p.net_salary) || 0), 0);
+    
+    return { totalGross, totalDeductions, totalNet, count: selectedPayroll.length };
+  }, [payroll, selectedPayrollIds]);
+
+  // Get drivers for logistics integration
+  const drivers = employees.filter(emp => emp.role === 'logistics');
+  const totalDrivers = drivers.length;
+  const activeDrivers = drivers.filter(d => d.is_active).length;
 
   // Mutations
   const createEmployeeMutation = useMutation(
@@ -188,12 +258,13 @@ const HRPage = () => {
   };
 
   // Calculate statistics
-  const totalEmployees = employees.length;
-  const activeEmployees = employees.filter(emp => emp.is_active).length;
-  const totalSalaryExpense = employees
+  const totalEmployees = allEmployees.length;
+  const activeEmployees = allEmployees.filter(emp => emp.is_active).length;
+  const totalSalaryExpense = allEmployees
     .filter(emp => emp.is_active && emp.salary)
     .reduce((sum, emp) => sum + parseFloat(emp.salary || 0), 0);
-  const pendingPayroll = payroll.filter(p => p.payment_status === 'pending').length;
+  const pendingPayroll = allPayroll.filter(p => p.payment_status === 'pending').length;
+  const averageSalary = activeEmployees > 0 ? totalSalaryExpense / activeEmployees : 0;
 
   if (isLoading) {
     return (
@@ -213,9 +284,26 @@ const HRPage = () => {
 
   return (
     <Container maxWidth="xl" sx={{ mt: { xs: 2, md: 4 }, mb: { xs: 2, md: 4 }, px: { xs: 1, sm: 2 } }}>
-      <Typography variant="h4" gutterBottom>
-        Human Resources Management
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <ManageAccounts sx={{ fontSize: 40, color: '#1976d2' }} />
+          <Typography variant="h4" gutterBottom sx={{ color: '#1976d2', m: 0 }}>
+            kabisakabisa enterprise - HR Management
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<DirectionsCar />}
+          onClick={() => navigate('/logistics')}
+          sx={{ 
+            bgcolor: '#4caf50', 
+            color: 'white',
+            '&:hover': { bgcolor: '#45a049' }
+          }}
+        >
+          View Logistics
+        </Button>
+      </Box>
 
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
@@ -261,14 +349,19 @@ const HRPage = () => {
           </Card>
         </Grid>
         <Grid item xs={6} sm={6} md={3}>
-          <Card>
+          <Card sx={{ bgcolor: '#FFF3E0', border: '1px solid #FF6B35' }}>
             <CardContent>
-              <Typography color="textSecondary" gutterBottom variant="body2">
-                Pending Payroll
-              </Typography>
-              <Typography variant="h5" color="warning.main">
-                {pendingPayroll}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <LocalShipping sx={{ fontSize: { xs: 30, md: 40 }, color: '#FF6B35', mr: 1 }} />
+                <Box>
+                  <Typography color="textSecondary" gutterBottom variant="body2">
+                    Active Drivers
+                  </Typography>
+                  <Typography variant="h6" sx={{ color: '#FF6B35' }}>
+                    {activeDrivers}/{totalDrivers}
+                  </Typography>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
@@ -278,17 +371,33 @@ const HRPage = () => {
       <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
         <Button
           variant="contained"
-          startIcon={<Add />}
+          startIcon={<PersonAdd />}
           onClick={() => setShowAddEmployee(true)}
+          sx={{ bgcolor: '#1976d2', '&:hover': { bgcolor: '#1565c0' } }}
         >
           Add Employee
         </Button>
         <Button
-          variant="outlined"
-          startIcon={<Payment />}
+          variant="contained"
+          startIcon={<AccountBalance />}
           onClick={() => setShowGeneratePayroll(true)}
+          sx={{ bgcolor: '#4caf50', '&:hover': { bgcolor: '#45a049' } }}
         >
           Generate Payroll
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<Assessment />}
+          onClick={() => {
+            if (selectedPayrollIds.length > 0) {
+              toast.success(`Selected ${selectedPayrollIds.length} payroll records for calculation`);
+            } else {
+              toast.info('Select payroll records to calculate totals');
+            }
+          }}
+          sx={{ bgcolor: '#ff9800', '&:hover': { bgcolor: '#f57c00' } }}
+        >
+          Calculate Selected
         </Button>
         <Button
           variant="outlined"
@@ -314,22 +423,101 @@ const HRPage = () => {
       {activeTab === 0 && (
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Employee Management
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+              <Typography variant="h6" sx={{ color: '#FF6B35' }}>
+                Employee Management ({employees.length} employees)
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                <TextField
+                  size="small"
+                  placeholder="Search employees..."
+                  value={employeeSearch}
+                  onChange={(e) => setEmployeeSearch(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search />
+                      </InputAdornment>
+                    )
+                  }}
+                  sx={{ minWidth: 200 }}
+                />
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel>Role</InputLabel>
+                  <Select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                    label="Role"
+                  >
+                    <MenuItem value="">All Roles</MenuItem>
+                    <MenuItem value="boss">Boss</MenuItem>
+                    <MenuItem value="manager">Manager</MenuItem>
+                    <MenuItem value="admin">Admin</MenuItem>
+                    <MenuItem value="hr">HR</MenuItem>
+                    <MenuItem value="sales">Sales</MenuItem>
+                    <MenuItem value="logistics">Logistics/Driver</MenuItem>
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>Branch</InputLabel>
+                  <Select
+                    value={selectedBranch}
+                    onChange={(e) => setSelectedBranch(e.target.value)}
+                    label="Branch"
+                  >
+                    <MenuItem value="">All Branches</MenuItem>
+                    {branches.map((branch) => (
+                      <MenuItem key={branch.id} value={branch.id}>
+                        {branch.branch_name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setEmployeeSearch('');
+                    setSelectedRole('');
+                    setSelectedBranch('');
+                  }}
+                  variant="outlined"
+                >
+                  Clear
+                </Button>
+              </Box>
+            </Box>
+            
+            {/* Driver Statistics Alert */}
+            {selectedRole === 'logistics' && (
+              <Alert severity="info" sx={{ mb: 2, bgcolor: '#FFF3E0', color: '#FF6B35' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2">
+                    Drivers/Logistics Staff: {drivers.length} total, {activeDrivers} active
+                  </Typography>
+                  <Button
+                    size="small"
+                    onClick={() => navigate('/logistics')}
+                    sx={{ color: '#FF6B35' }}
+                  >
+                    View in Logistics
+                  </Button>
+                </Box>
+              </Alert>
+            )}
+            
             <TableContainer component={Paper}>
               <Table size="small">
                 <TableHead>
-                  <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Phone</TableCell>
-                    <TableCell>Role</TableCell>
-                    <TableCell>Branch</TableCell>
-                    <TableCell>Salary</TableCell>
-                    <TableCell>Hire Date</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Actions</TableCell>
+                  <TableRow sx={{ bgcolor: '#1976d2' }}>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Name</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Email</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Phone</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Role</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Branch</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Salary</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Hire Date</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -342,9 +530,10 @@ const HRPage = () => {
                         <TableCell>{employee.phone || 'N/A'}</TableCell>
                         <TableCell>
                           <Chip 
-                            label={employee.role.toUpperCase()}
+                            label={employee.role === 'logistics' ? 'DRIVER' : employee.role.toUpperCase()}
                             color={getRoleColor(employee.role)}
                             size="small"
+                            icon={employee.role === 'logistics' ? <LocalShipping /> : undefined}
                           />
                         </TableCell>
                         <TableCell>{employeeBranch?.branch_name || 'No Branch'}</TableCell>
@@ -368,6 +557,17 @@ const HRPage = () => {
                           >
                             <Delete />
                           </IconButton>
+                          {employee.role === 'logistics' && (
+                            <Tooltip title="View in Logistics">
+                              <IconButton 
+                                onClick={() => navigate('/logistics')}
+                                size="small"
+                                sx={{ color: '#FF6B35' }}
+                              >
+                                <LocalShipping />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
@@ -383,61 +583,181 @@ const HRPage = () => {
       {activeTab === 1 && (
         <Card>
           <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">
-                Payroll Records
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+              <Typography variant="h6" sx={{ color: '#FF6B35' }}>
+                Payroll Management ({payroll.length} records)
               </Typography>
-              <Button
-                variant="outlined"
-                startIcon={<Email />}
-                onClick={() => {
-                  const pendingIds = payroll
-                    .filter(p => p.payment_status === 'pending')
-                    .map(p => p.id);
-                  if (pendingIds.length > 0) {
-                    sendPayslipsMutation.mutate(pendingIds);
-                  } else {
-                    toast.info('No pending payroll to send');
-                  }
-                }}
-                disabled={pendingPayroll === 0}
-              >
-                Send Payslips
-              </Button>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                <TextField
+                  size="small"
+                  label="Period (YYYY-MM)"
+                  placeholder="2024-01"
+                  value={payrollPeriod}
+                  onChange={(e) => setPayrollPeriod(e.target.value)}
+                  sx={{ minWidth: 150 }}
+                />
+                <Button
+                  variant="outlined"
+                  startIcon={<Send />}
+                  onClick={() => {
+                    if (selectedPayrollIds.length > 0) {
+                      sendPayslipsMutation.mutate(selectedPayrollIds);
+                    } else {
+                      const pendingIds = payroll
+                        .filter(p => p.payment_status === 'pending')
+                        .map(p => p.id);
+                      if (pendingIds.length > 0) {
+                        sendPayslipsMutation.mutate(pendingIds);
+                      } else {
+                        toast.info('No pending payroll to send');
+                      }
+                    }
+                  }}
+                  disabled={pendingPayroll === 0 && selectedPayrollIds.length === 0}
+                  sx={{ color: '#FF6B35', borderColor: '#FF6B35' }}
+                >
+                  Send Payslips
+                </Button>
+              </Box>
             </Box>
+            
+            {/* Auto-calculation Summary */}
+            {selectedPayrollIds.length > 0 && (
+              <Alert severity="success" sx={{ mb: 2, bgcolor: '#E8F5E8' }}>
+                <Typography variant="h6" gutterBottom sx={{ color: '#FF6B35' }}>
+                  Selected Payroll Calculation
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={3}>
+                    <Typography variant="body2" color="text.secondary">Records Selected</Typography>
+                    <Typography variant="h6" sx={{ color: '#FF6B35' }}>
+                      {payrollTotals.count}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={3}>
+                    <Typography variant="body2" color="text.secondary">Total Gross Salary</Typography>
+                    <Typography variant="h6" sx={{ color: '#FF6B35' }}>
+                      {formatCurrency(payrollTotals.totalGross)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={3}>
+                    <Typography variant="body2" color="text.secondary">Total Deductions</Typography>
+                    <Typography variant="h6" sx={{ color: '#FF6B35' }}>
+                      {formatCurrency(payrollTotals.totalDeductions)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={3}>
+                    <Typography variant="body2" color="text.secondary">Total Net Salary</Typography>
+                    <Typography variant="h6" sx={{ color: '#FF6B35' }}>
+                      {formatCurrency(payrollTotals.totalNet)}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Alert>
+            )}
+            
             <TableContainer component={Paper}>
               <Table size="small">
                 <TableHead>
-                  <TableRow>
-                    <TableCell>Employee</TableCell>
-                    <TableCell>Period</TableCell>
-                    <TableCell>Gross Salary</TableCell>
-                    <TableCell>Deductions</TableCell>
-                    <TableCell>Net Salary</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Generated Date</TableCell>
+                  <TableRow sx={{ bgcolor: '#4caf50' }}>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Select</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Employee</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Period</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Gross Salary</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Deductions (%)</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Net Salary</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Status</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Generated Date</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {payroll.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell>{record.employee_name}</TableCell>
-                      <TableCell>
-                        {new Date(record.period_start).toLocaleDateString()} - {new Date(record.period_end).toLocaleDateString()}
+                  {payroll.map((record) => {
+                    const grossSalary = parseFloat(record.gross_salary) || 0;
+                    const deductions = parseFloat(record.deductions) || 0;
+                    const deductionPercentage = grossSalary > 0 ? ((deductions / grossSalary) * 100).toFixed(1) : 0;
+                    const netSalary = grossSalary - deductions;
+                    const isSelected = selectedPayrollIds.includes(record.id);
+                    
+                    return (
+                      <TableRow 
+                        key={record.id}
+                        sx={{ 
+                          bgcolor: isSelected ? '#FFF3E0' : 'inherit',
+                          '&:hover': { bgcolor: '#F5F5F5' }
+                        }}
+                      >
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedPayrollIds(prev => [...prev, record.id]);
+                              } else {
+                                setSelectedPayrollIds(prev => prev.filter(id => id !== record.id));
+                              }
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body2" fontWeight="bold">
+                              {record.employee_name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {record.employee_email}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {new Date(record.period_start).toLocaleDateString()} - {new Date(record.period_end).toLocaleDateString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="bold" sx={{ color: '#FF6B35' }}>
+                            {formatCurrency(grossSalary)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body2" color="error.main">
+                              {formatCurrency(deductions)}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              ({deductionPercentage}%)
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="bold" sx={{ color: 'success.main' }}>
+                            {formatCurrency(netSalary)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={record.payment_status.toUpperCase()}
+                            color={record.payment_status === 'paid' ? 'success' : 'warning'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {new Date(record.created_at).toLocaleDateString()}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {payroll.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} align="center">
+                        <Typography color="text.secondary">
+                          No payroll records found
+                        </Typography>
                       </TableCell>
-                      <TableCell>{formatCurrency(record.gross_salary)}</TableCell>
-                      <TableCell>{formatCurrency(record.deductions)}</TableCell>
-                      <TableCell>{formatCurrency(record.net_salary)}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={record.payment_status.toUpperCase()}
-                          color={record.payment_status === 'paid' ? 'success' : 'warning'}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>{new Date(record.created_at).toLocaleDateString()}</TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -456,16 +776,23 @@ const HRPage = () => {
                 </Typography>
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="body2" color="text.secondary">
-                    Total Employees: {totalEmployees}
+                    Total Employees: <strong>{totalEmployees}</strong>
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Active Employees: {activeEmployees}
+                    Active Employees: <strong style={{ color: '#4CAF50' }}>{activeEmployees}</strong>
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Inactive Employees: {totalEmployees - activeEmployees}
+                    Inactive Employees: <strong style={{ color: '#F44336' }}>{totalEmployees - activeEmployees}</strong>
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Average Salary: {formatCurrency(activeEmployees > 0 ? totalSalaryExpense / activeEmployees : 0)}
+                    Average Salary: <strong style={{ color: '#FF6B35' }}>{formatCurrency(averageSalary)}</strong>
+                  </Typography>
+                  <Divider sx={{ my: 1 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    Total Drivers: <strong style={{ color: '#FF6B35' }}>{totalDrivers}</strong>
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Active Drivers: <strong style={{ color: '#4CAF50' }}>{activeDrivers}</strong>
                   </Typography>
                 </Box>
               </CardContent>
@@ -488,19 +815,20 @@ const HRPage = () => {
                     </TableHead>
                     <TableBody>
                       {['admin', 'boss', 'manager', 'hr', 'sales', 'logistics'].map(role => {
-                        const count = employees.filter(emp => emp.role === role).length;
+                        const count = allEmployees.filter(emp => emp.role === role).length;
                         const percentage = totalEmployees > 0 ? ((count / totalEmployees) * 100).toFixed(1) : 0;
                         return (
                           <TableRow key={role}>
                             <TableCell>
                               <Chip 
-                                label={role.toUpperCase()}
+                                label={role === 'logistics' ? 'DRIVER' : role.toUpperCase()}
                                 color={getRoleColor(role)}
                                 size="small"
+                                icon={role === 'logistics' ? <LocalShipping /> : undefined}
                               />
                             </TableCell>
-                            <TableCell>{count}</TableCell>
-                            <TableCell>{percentage}%</TableCell>
+                            <TableCell><strong>{count}</strong></TableCell>
+                            <TableCell><strong>{percentage}%</strong></TableCell>
                           </TableRow>
                         );
                       })}
@@ -549,8 +877,8 @@ const HRPage = () => {
                 <MenuItem value="manager">Manager</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
                 <MenuItem value="hr">HR</MenuItem>
-                <MenuItem value="sales">Sales</MenuItem>
-                <MenuItem value="logistics">Logistics</MenuItem>
+                <MenuItem value="sales">Sales Staff</MenuItem>
+                <MenuItem value="logistics">Driver/Logistics</MenuItem>
               </Select>
             </FormControl>
             <FormControl fullWidth margin="normal">
@@ -583,9 +911,14 @@ const HRPage = () => {
               {...register('hire_date')}
             />
             {!editingEmployee && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                Default password will be: [role]password123
-              </Typography>
+              <Alert severity="info" sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  Default password will be: <strong>[role]password123</strong>
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Driver accounts will have logistics role and can be viewed in Logistics page
+                </Typography>
+              </Alert>
             )}
           </Box>
         </DialogContent>

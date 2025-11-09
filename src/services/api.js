@@ -157,7 +157,9 @@ export const hrAPI = {
   deleteEmployee: (id) => api.delete(`/hr/employees/${id}`).then(res => res.data),
   generatePayroll: (data) => api.post('/hr/payroll/generate', data).then(res => res.data),
   getPayroll: (params) => api.get('/hr/payroll', { params }).then(res => res.data),
-  sendPayslips: (payrollIds) => api.post('/hr/payroll/send-payslips', { payrollIds }).then(res => res.data),
+  sendPayslips: (payrollIds) => api.post('/hr/payroll/send-payslips', { payroll_ids: payrollIds }).then(res => res.data),
+  bulkUpdatePayroll: (payrollIds, status) => api.patch('/hr/payroll/bulk-update', { payroll_ids: payrollIds, status }).then(res => res.data),
+  getDriverStats: () => api.get('/hr/drivers/stats').then(res => res.data),
 };
 
 // Boss API

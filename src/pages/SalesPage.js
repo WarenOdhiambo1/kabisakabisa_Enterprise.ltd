@@ -29,7 +29,7 @@ import {
 import { Add, Delete, Visibility, Receipt, History } from '@mui/icons-material';
 import { useParams } from 'react-router-dom';
 import QuickUpload from '../components/QuickUpload';
-import HistoricalDataViewer from '../components/HistoricalDataViewer';
+
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { salesAPI, dataAPI } from '../services/api';
@@ -42,7 +42,7 @@ const SalesPage = () => {
   const [showStockModal, setShowStockModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showFundsModal, setShowFundsModal] = useState(false);
-  const [showHistoricalData, setShowHistoricalData] = useState(false);
+
 
   const { register, control, handleSubmit, watch, setValue, reset } = useForm({
     defaultValues: {
@@ -66,7 +66,9 @@ const SalesPage = () => {
 
   const stock = pageData?.stock || [];
   const sales = pageData?.sales || [];
-  // const expenses = pageData?.expenses || [];
+  const expenses = pageData?.expenses || [];
+  
+  console.log('Sales page data:', { stock: stock.length, sales: sales.length, expenses: expenses.length });
 
   const { data: dailySummary } = useQuery(
     ['dailySummary', branchId],
@@ -334,14 +336,7 @@ const SalesPage = () => {
         >
           Funds Tracking
         </Button>
-        <Button
-          variant="outlined"
-          startIcon={<History />}
-          onClick={() => setShowHistoricalData(true)}
-          color="info"
-        >
-          Historical Data
-        </Button>
+
         <QuickUpload defaultCategory="receipts" buttonText="Upload Receipt" />
       </Box>
 
@@ -622,12 +617,7 @@ const SalesPage = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Historical Data Viewer */}
-      <HistoricalDataViewer 
-        open={showHistoricalData}
-        onClose={() => setShowHistoricalData(false)}
-        title="Sales Historical Data"
-      />
+
     </Container>
   );
 };
