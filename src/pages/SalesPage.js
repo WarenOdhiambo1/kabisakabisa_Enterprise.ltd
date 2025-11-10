@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Container,
   Typography,
@@ -58,61 +58,67 @@ const SalesPage = () => {
   // Queries - Use correct API endpoints
   const { data: stock = [], isLoading: stockLoading } = useQuery(
     ['stock', selectedBranchId],
-    () => selectedBranchId ? dataAPI.refreshData.stock(selectedBranchId) : [],
+    () => selectedBranchId ? stockAPI.getByBranch(selectedBranchId) : Promise.resolve([]),
     { enabled: !!selectedBranchId }
   );
   
   const { data: sales = [], isLoading: salesLoading } = useQuery(
     ['sales', selectedBranchId],
     () => selectedBranchId ? salesAPI.getByBranch(selectedBranchId) : Promise.resolve([]),
-    { enabled: !!selectedBranchId, retry: 1 }
+    { enabled: !!selectedBranchId }
   );
   
-  const { data: branches = [] } = useQuery('branches', () => dataAPI.refreshData.branches());
+  const { data: branches = [] } = useQuery('branches', () => branchesAPI.getAll());
   
   const isLoading = stockLoading || salesLoading;
   const error = null; // Individual queries handle their own errors
 
-  const { data: dailySummary } = useQuery(
-    ['dailySummary', selectedBranchId],
-    () => {
-      const today = new Date().toISOString().split('T')[0];
-      const todaySales = (sales || []).filter(s => {
-        if (!s.sale_date) return false;
-        const saleDate = s.sale_date.includes('T') ? s.sale_date.split('T')[0] : s.sale_date;
-        return saleDate === today;
-      });
-      return { 
-        totalSales: todaySales.length, 
-        totalAmount: todaySales.reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0) 
-      };
-    },
-    { enabled: !!sales }
-  );
+  const dailySummary = useMemo(() => {
+    if (!sales || sales.length === 0) return { totalSales: 0, totalAmount: 0 };
+    
+    const today = new Date().toISOString().split('T')[0];
+    const todaySales = sales.filter(s => {
+      if (!s.sale_date) return false;
+      const saleDate = s.sale_date.includes('T') ? s.sale_date.split('T')[0] : s.sale_date;
+      return saleDate === today;
+    });
+    
+    return { 
+      totalSales: todaySales.length, 
+      totalAmount: todaySales.reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0) 
+    };
+  }, [sales]);
 
-  const { data: fundsTracking } = useQuery(
-    ['fundsTracking', selectedBranchId],
-    () => {
-      const today = new Date().toISOString().split('T')[0];
-      const todaySales = (sales || []).filter(s => {
-        if (!s.sale_date) return false;
-        const saleDate = s.sale_date.includes('T') ? s.sale_date.split('T')[0] : s.sale_date;
-        return saleDate === today;
-      });
+  const fundsTracking = useMemo(() => {
+    if (!sales || sales.length === 0) {
       return {
-        receivedFunds: todaySales.filter(s => s.payment_method !== 'credit').reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0),
-        outstandingBalance: todaySales.filter(s => s.payment_method === 'credit').reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0),
-        totalSalesAmount: todaySales.reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0),
-        salesBreakdown: {
-          cash: todaySales.filter(s => s.payment_method === 'cash').reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0),
-          card: todaySales.filter(s => s.payment_method === 'card').reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0),
-          credit: todaySales.filter(s => s.payment_method === 'credit').reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0)
-        },
+        receivedFunds: 0,
+        outstandingBalance: 0,
+        totalSalesAmount: 0,
+        salesBreakdown: { cash: 0, card: 0, credit: 0 },
         date: new Date().toLocaleDateString()
       };
-    },
-    { enabled: !!sales }
-  );
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    const todaySales = sales.filter(s => {
+      if (!s.sale_date) return false;
+      const saleDate = s.sale_date.includes('T') ? s.sale_date.split('T')[0] : s.sale_date;
+      return saleDate === today;
+    });
+    
+    return {
+      receivedFunds: todaySales.filter(s => s.payment_method !== 'credit').reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0),
+      outstandingBalance: todaySales.filter(s => s.payment_method === 'credit').reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0),
+      totalSalesAmount: todaySales.reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0),
+      salesBreakdown: {
+        cash: todaySales.filter(s => s.payment_method === 'cash').reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0),
+        card: todaySales.filter(s => s.payment_method === 'card').reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0),
+        credit: todaySales.filter(s => s.payment_method === 'credit').reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0)
+      },
+      date: new Date().toLocaleDateString()
+    };
+  }, [sales]);
 
   // Mutations
   const createSaleMutation = useMutation(
@@ -329,7 +335,7 @@ const SalesPage = () => {
                 Today's Sales
               </Typography>
               <Typography variant="h6">
-                {dailySummary?.totalSales || 0}
+                {dailySummary.totalSales}
               </Typography>
             </CardContent>
           </Card>
@@ -341,7 +347,7 @@ const SalesPage = () => {
                 Today's Revenue
               </Typography>
               <Typography variant="h6">
-                {formatCurrency(dailySummary?.totalAmount || 0)}
+                {formatCurrency(dailySummary.totalAmount)}
               </Typography>
             </CardContent>
           </Card>
@@ -353,7 +359,7 @@ const SalesPage = () => {
                 Received Funds
               </Typography>
               <Typography variant="h6">
-                {formatCurrency(fundsTracking?.receivedFunds || 0)}
+                {formatCurrency(fundsTracking.receivedFunds)}
               </Typography>
             </CardContent>
           </Card>
@@ -365,7 +371,7 @@ const SalesPage = () => {
                 Outstanding Balance
               </Typography>
               <Typography variant="h6">
-                {formatCurrency(fundsTracking?.outstandingBalance || 0)}
+                {formatCurrency(fundsTracking.outstandingBalance)}
               </Typography>
             </CardContent>
           </Card>
@@ -393,6 +399,12 @@ const SalesPage = () => {
           onClick={() => setShowFundsModal(true)}
         >
           Funds Tracking
+        </Button>
+        <Button
+          variant="outlined"
+          color="secondary"
+        >
+          Search Sales
         </Button>
 
         <QuickUpload defaultCategory="receipts" buttonText="Upload Receipt" />
