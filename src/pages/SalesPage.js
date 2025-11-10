@@ -32,6 +32,7 @@ import QuickUpload from '../components/QuickUpload';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { salesAPI, stockAPI, branchesAPI, logisticsAPI } from '../services/api';
+import api from '../services/api';
 import { formatCurrency } from '../theme';
 import toast from 'react-hot-toast';
 
@@ -74,7 +75,11 @@ const SalesPage = () => {
   
   const { data: expenses = [] } = useQuery(
     ['expenses', selectedBranchId],
-    () => selectedBranchId ? salesAPI.getExpenses(selectedBranchId) : Promise.resolve([]),
+    () => {
+      if (!selectedBranchId) return Promise.resolve([]);
+      const filter = `FIND('${selectedBranchId}', ARRAYJOIN({branch_id}))`;
+      return api.get(`/data/Expenses?filter=${encodeURIComponent(filter)}`).then(res => res.data);
+    },
     { enabled: !!selectedBranchId }
   );
   
@@ -153,21 +158,24 @@ const SalesPage = () => {
 
   const recordExpenseMutation = useMutation(
     (data) => {
-      console.log('Recording expense with data:', data);
-      console.log('Selected branch ID:', selectedBranchId);
-      return salesAPI.recordExpense(selectedBranchId || 'default', data);
+      // Use direct API call to Expenses table
+      const expenseData = {
+        ...data,
+        branch_id: selectedBranchId ? [selectedBranchId] : undefined,
+        created_by: [JSON.parse(localStorage.getItem('userData') || '{}').id || 'system']
+      };
+      
+      return api.post('/data/Expenses', expenseData).then(res => res.data);
     },
     {
       onSuccess: (response) => {
         toast.success('Expense recorded successfully!');
         resetExpenseForm();
         setShowExpenseModal(false);
-        queryClient.invalidateQueries(['sales', selectedBranchId]);
         queryClient.invalidateQueries(['expenses', selectedBranchId]);
       },
       onError: (error) => {
         console.error('Expense recording error:', error);
-        console.error('Error response:', error.response?.data);
         const errorMessage = error.response?.data?.message || 'Failed to record expense';
         toast.error(errorMessage);
       }
@@ -238,7 +246,7 @@ const SalesPage = () => {
     expense_date: new Date().toISOString().split('T')[0],
     category: '',
     amount: '',
-    vehicle_plate_number: '',
+    vehicle_id: '',
     description: ''
   });
 
@@ -256,7 +264,7 @@ const SalesPage = () => {
       expense_date: new Date().toISOString().split('T')[0],
       category: '',
       amount: '',
-      vehicle_plate_number: '',
+      vehicle_id: '',
       description: ''
     });
   };
@@ -274,13 +282,22 @@ const SalesPage = () => {
       return;
     }
     
-    recordExpenseMutation.mutate({
+    const selectedVehicle = vehicles.find(v => v.id === expenseForm.vehicle_id);
+    
+    const expenseData = {
       expense_date: expenseForm.expense_date,
       category: expenseForm.category,
       amount: parseFloat(expenseForm.amount),
-      vehicle_plate_number: expenseForm.vehicle_plate_number || undefined,
       description: expenseForm.description || undefined
-    });
+    };
+    
+    // Add vehicle data if selected
+    if (selectedVehicle) {
+      expenseData.vehicle_id = [selectedVehicle.id]; // Airtable link format
+      expenseData.vehicle_plate_number = selectedVehicle.plate_number;
+    }
+    
+    recordExpenseMutation.mutate(expenseData);
   };
 
   const ExpenseForm = () => (
@@ -333,15 +350,15 @@ const SalesPage = () => {
           <FormControl fullWidth>
             <InputLabel>Vehicle</InputLabel>
             <Select
-              value={expenseForm.vehicle_plate_number}
-              onChange={(e) => handleExpenseChange('vehicle_plate_number', e.target.value)}
+              value={expenseForm.vehicle_id}
+              onChange={(e) => handleExpenseChange('vehicle_id', e.target.value)}
               label="Vehicle"
             >
               <MenuItem value="">
-                <em>Select Vehicle (Optional)</em>
+                <em>No Vehicle</em>
               </MenuItem>
               {vehicles.map((vehicle) => (
-                <MenuItem key={vehicle.id} value={vehicle.plate_number}>
+                <MenuItem key={vehicle.id} value={vehicle.id}>
                   {vehicle.plate_number} - {vehicle.vehicle_type}
                 </MenuItem>
               ))}
@@ -939,7 +956,11 @@ const SalesPage = () => {
                       />
                     </TableCell>
                     <TableCell>{formatCurrency(expense.amount || 0)}</TableCell>
-                    <TableCell>{expense.vehicle_plate_number || 'N/A'}</TableCell>
+                    <TableCell>
+                      {expense.vehicle_plate_number || 
+                       (expense.vehicle_id && vehicles.find(v => v.id === (Array.isArray(expense.vehicle_id) ? expense.vehicle_id[0] : expense.vehicle_id))?.plate_number) || 
+                       'N/A'}
+                    </TableCell>
                     <TableCell>{expense.description || 'N/A'}</TableCell>
                   </TableRow>
                 ))}
