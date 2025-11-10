@@ -14,14 +14,13 @@ import {
   DialogActions
 } from '@mui/material';
 import { useForm } from 'react-hook-form';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const LoginPage = () => {
   const { login, setupMFA, verifyMFA, loginWithMFA } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [mfaStep, setMfaStep] = useState(null); // null, 'setup', 'verify', 'login'
