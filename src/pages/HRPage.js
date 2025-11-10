@@ -81,7 +81,8 @@ const HRPage = () => {
     'branches',
     async () => {
       try {
-        const branchData = await branchesAPI.getPublic();
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/hr/branches`);
+        const branchData = await response.json();
         console.log('Branches loaded:', branchData);
         return branchData;
       } catch (error) {
