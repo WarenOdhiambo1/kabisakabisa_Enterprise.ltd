@@ -33,7 +33,7 @@ import {
   Tooltip
 } from '@mui/material';
 import { 
-  Edit, Delete, People, History, Search, Send,
+  Edit, Delete, People, History, Search, Send, Add,
   DirectionsCar, AccountBalance, LocalShipping,
   ManageAccounts, PersonAdd, Assessment
 } from '@mui/icons-material';
@@ -87,13 +87,13 @@ const HRPage = () => {
   }, [pageData?.employees, branchEmployees, user?.role]);
   const allPayroll = useMemo(() => pageData?.payroll || [], [pageData?.payroll]);
   
-  const { data: branches = [] } = useQuery('branches', () => branchesAPI.getAll(), {
-    staleTime: 5 * 60 * 1000 // 5 minutes
-  });
+  const { data: branches = [] } = useQuery('branches', () => 
+    dataAPI.refreshData.branches().catch(() => branchesAPI.getAll())
+  );
 
-  // Filter employees based on search and filters (only show active employees)
+  // Filter employees based on search and filters (show all employees with status)
   const employees = useMemo(() => {
-    let filtered = allEmployees.filter(emp => emp.is_active !== false);
+    let filtered = [...allEmployees];
     
     if (employeeSearch) {
       filtered = filtered.filter(emp => 
@@ -108,7 +108,10 @@ const HRPage = () => {
     }
     
     if (selectedBranch) {
-      filtered = filtered.filter(emp => emp.branch_id === selectedBranch);
+      filtered = filtered.filter(emp => {
+        const branchId = Array.isArray(emp.branch_id) ? emp.branch_id[0] : emp.branch_id;
+        return branchId === selectedBranch;
+      });
     }
     
     return filtered.sort((a, b) => a.full_name?.localeCompare(b.full_name));
@@ -581,8 +584,8 @@ const HRPage = () => {
                         <TableCell>{employee.hire_date ? new Date(employee.hire_date).toLocaleDateString() : 'N/A'}</TableCell>
                         <TableCell>
                           <Chip 
-                            label="Active"
-                            color="success"
+                            label={employee.is_active !== false ? 'Active' : 'Inactive'}
+                            color={employee.is_active !== false ? 'success' : 'default'}
                             size="small"
                           />
                         </TableCell>
@@ -590,18 +593,35 @@ const HRPage = () => {
                           <IconButton onClick={() => handleEditEmployee(employee)} size="small">
                             <Edit />
                           </IconButton>
-                          <IconButton 
-                            onClick={() => {
-                              if (window.confirm(`Are you sure you want to deactivate ${employee.full_name}?`)) {
-                                deleteEmployeeMutation.mutate(employee);
-                              }
-                            }}
-                            size="small" 
-                            color="error"
-                            disabled={deleteEmployeeMutation.isLoading}
-                          >
-                            <Delete />
-                          </IconButton>
+                          {employee.is_active !== false ? (
+                            <IconButton 
+                              onClick={() => {
+                                if (window.confirm(`Are you sure you want to deactivate ${employee.full_name}?`)) {
+                                  deleteEmployeeMutation.mutate(employee);
+                                }
+                              }}
+                              size="small" 
+                              color="error"
+                              disabled={deleteEmployeeMutation.isLoading}
+                              title="Deactivate Employee"
+                            >
+                              <Delete />
+                            </IconButton>
+                          ) : (
+                            <IconButton 
+                              onClick={() => {
+                                if (window.confirm(`Are you sure you want to reactivate ${employee.full_name}?`)) {
+                                  updateEmployeeMutation.mutate({ id: employee.id, data: { is_active: true } });
+                                }
+                              }}
+                              size="small" 
+                              color="success"
+                              disabled={updateEmployeeMutation.isLoading}
+                              title="Reactivate Employee"
+                            >
+                              <Add />
+                            </IconButton>
+                          )}
                           {employee.role === 'logistics' && (
                             <Tooltip title="View in Logistics">
                               <IconButton 
