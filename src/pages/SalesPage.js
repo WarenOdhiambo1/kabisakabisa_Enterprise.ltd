@@ -64,8 +64,8 @@ const SalesPage = () => {
   
   const { data: sales = [], isLoading: salesLoading } = useQuery(
     ['sales', selectedBranchId],
-    () => selectedBranchId ? salesAPI.getByBranch(selectedBranchId) : [],
-    { enabled: !!selectedBranchId }
+    () => selectedBranchId ? salesAPI.getByBranch(selectedBranchId) : Promise.resolve([]),
+    { enabled: !!selectedBranchId, retry: 1 }
   );
   
   const { data: branches = [] } = useQuery('branches', () => dataAPI.refreshData.branches());
@@ -77,20 +77,28 @@ const SalesPage = () => {
     ['dailySummary', selectedBranchId],
     () => {
       const today = new Date().toISOString().split('T')[0];
-      const todaySales = sales.filter(s => s.sale_date && s.sale_date.startsWith(today));
+      const todaySales = (sales || []).filter(s => {
+        if (!s.sale_date) return false;
+        const saleDate = s.sale_date.includes('T') ? s.sale_date.split('T')[0] : s.sale_date;
+        return saleDate === today;
+      });
       return { 
         totalSales: todaySales.length, 
         totalAmount: todaySales.reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0) 
       };
     },
-    { enabled: true }
+    { enabled: !!sales }
   );
 
   const { data: fundsTracking } = useQuery(
     ['fundsTracking', selectedBranchId],
     () => {
       const today = new Date().toISOString().split('T')[0];
-      const todaySales = sales.filter(s => s.sale_date && s.sale_date.startsWith(today));
+      const todaySales = (sales || []).filter(s => {
+        if (!s.sale_date) return false;
+        const saleDate = s.sale_date.includes('T') ? s.sale_date.split('T')[0] : s.sale_date;
+        return saleDate === today;
+      });
       return {
         receivedFunds: todaySales.filter(s => s.payment_method !== 'credit').reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0),
         outstandingBalance: todaySales.filter(s => s.payment_method === 'credit').reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0),
@@ -103,7 +111,7 @@ const SalesPage = () => {
         date: new Date().toLocaleDateString()
       };
     },
-    { enabled: true }
+    { enabled: !!sales }
   );
 
   // Mutations
@@ -472,7 +480,17 @@ const SalesPage = () => {
                 </Button>
 
                 <Grid container spacing={2} sx={{ mt: 2 }}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      fullWidth
+                      label="Sale Date"
+                      type="date"
+                      defaultValue={new Date().toISOString().split('T')[0]}
+                      InputLabelProps={{ shrink: true }}
+                      {...register('sale_date')}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
                     <FormControl fullWidth>
                       <InputLabel>Payment Method</InputLabel>
                       <Select
@@ -485,7 +503,7 @@ const SalesPage = () => {
                       </Select>
                     </FormControl>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={4}>
                     <TextField
                       fullWidth
                       label="Customer Name (Optional)"
@@ -529,21 +547,28 @@ const SalesPage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {sales.slice(0, 10).map((sale) => (
+                    {(sales || []).slice(0, 10).map((sale) => (
                       <TableRow key={sale.id}>
                         <TableCell>
-                          {new Date(sale.created_at).toLocaleTimeString()}
+                          {sale.sale_date ? new Date(sale.sale_date).toLocaleDateString() : 'N/A'}
                         </TableCell>
-                        <TableCell>{formatCurrency(sale.total_amount)}</TableCell>
+                        <TableCell>{formatCurrency(sale.total_amount || 0)}</TableCell>
                         <TableCell>
                           <Chip 
-                            label={sale.payment_method} 
+                            label={sale.payment_method || 'N/A'} 
                             size="small"
                             color={sale.payment_method === 'cash' ? 'success' : 'default'}
                           />
                         </TableCell>
                       </TableRow>
                     ))}
+                    {(!sales || sales.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={3} align="center">
+                          No recent sales
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
