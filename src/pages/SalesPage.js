@@ -42,7 +42,6 @@ const SalesPage = () => {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showFundsModal, setShowFundsModal] = useState(false);
   const [showSalesSearch, setShowSalesSearch] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
 
   const { register, control, handleSubmit, watch, setValue, reset } = useForm({
     defaultValues: {
