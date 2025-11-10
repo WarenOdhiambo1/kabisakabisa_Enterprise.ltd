@@ -75,15 +75,22 @@ const AdminPage = () => {
   const { register: registerBranch, handleSubmit: handleSubmitBranch, reset: resetBranch, setValue: setValueBranch } = useForm();
   const { register: registerProduct, handleSubmit: handleSubmitProduct, reset: resetProduct, setValue: setValueProduct, watch: watchProduct } = useForm();
 
-  const { data: pageData, isLoading, error } = useQuery(
+  const { data: pageData, isLoading } = useQuery(
     ['adminPageData', selectedBranchId],
     async () => {
       try {
-        const params = selectedBranchId ? { branchId: selectedBranchId } : {};
-        return await dataAPI.getPageData('admin', params);
-      } catch (error) {
-        console.error('Admin data loading failed:', error);
-        // Return fallback data
+        // Load data directly from APIs
+        const [employeesData, branchesData] = await Promise.all([
+          hrAPI.getEmployees().catch(() => []),
+          branchesAPI.getAll().catch(() => [])
+        ]);
+        return {
+          employees: employeesData,
+          branches: branchesData,
+          products: []
+        };
+      } catch (err) {
+        console.error('Admin data loading failed:', err);
         return {
           employees: [],
           branches: [],
@@ -309,12 +316,17 @@ const AdminPage = () => {
       toast.error('Product name is required');
       return;
     }
+    if (!data.branch_id) {
+      toast.error('Branch is required');
+      return;
+    }
     
     const cleanData = {
       product_name: data.product_name.trim(),
       unit_price: parseFloat(data.unit_price) || 0,
       quantity_available: parseInt(data.quantity_available) || 0,
-      branch_id: data.branch_id
+      reorder_level: parseInt(data.reorder_level) || 10,
+      branch_id: [data.branch_id] // Airtable link field format
     };
     
     if (editingProduct) {
@@ -338,7 +350,8 @@ const AdminPage = () => {
     setValueProduct('product_name', product.product_name);
     setValueProduct('unit_price', product.unit_price);
     setValueProduct('quantity_available', product.quantity_available);
-    setValueProduct('branch_id', product.branch_id);
+    setValueProduct('reorder_level', product.reorder_level || 10);
+    setValueProduct('branch_id', Array.isArray(product.branch_id) ? product.branch_id[0] : product.branch_id);
     setShowAddProduct(true);
   };
 
@@ -362,7 +375,7 @@ const AdminPage = () => {
     );
   }
 
-  // Don't show error, just use fallback data
+
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -841,6 +854,15 @@ const AdminPage = () => {
               step="0.01"
               margin="normal"
               {...registerProduct('unit_price', { required: true })}
+            />
+            <TextField
+              fullWidth
+              label="Reorder Level"
+              type="number"
+              margin="normal"
+              defaultValue={10}
+              helperText="Minimum quantity before reorder alert"
+              {...registerProduct('reorder_level')}
             />
           </Box>
         </DialogContent>
