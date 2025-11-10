@@ -358,9 +358,94 @@ const AdminPage = () => {
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Admin Dashboard
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ color: '#1976d2', m: 0 }}>
+          kabisakabisa enterprise - Admin Dashboard
+        </Typography>
+      </Box>
+
+      {/* Quick Navigation */}
+      <Card sx={{ mb: 4, bgcolor: '#f5f5f5' }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ color: '#1976d2' }}>
+            System Navigation
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={() => window.open('/hr', '_blank')}
+                sx={{ bgcolor: '#4caf50', '&:hover': { bgcolor: '#45a049' } }}
+              >
+                HR Management
+              </Button>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={() => window.open('/logistics', '_blank')}
+                sx={{ bgcolor: '#ff9800', '&:hover': { bgcolor: '#f57c00' } }}
+              >
+                Logistics
+              </Button>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={() => window.open('/orders', '_blank')}
+                sx={{ bgcolor: '#9c27b0', '&:hover': { bgcolor: '#7b1fa2' } }}
+              >
+                Purchase Orders
+              </Button>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={() => window.open('/boss', '_blank')}
+                sx={{ bgcolor: '#f44336', '&:hover': { bgcolor: '#d32f2f' } }}
+              >
+                Boss Dashboard
+              </Button>
+            </Grid>
+          </Grid>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} sm={6} md={4}>
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => window.open('https://xero.com', '_blank')}
+                sx={{ color: '#13B5EA', borderColor: '#13B5EA' }}
+              >
+                Xero Accounting
+              </Button>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => window.open('/data', '_blank')}
+                sx={{ color: '#607d8b', borderColor: '#607d8b' }}
+              >
+                Data Management
+              </Button>
+            </Grid>
+            <Grid item xs={12} sm={6} md={4}>
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => setShowHistoricalData(true)}
+                sx={{ color: '#795548', borderColor: '#795548' }}
+              >
+                Historical Data
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
       
       {/* Summary Cards */}
       <Box sx={{ mb: 4 }}>
