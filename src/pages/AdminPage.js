@@ -87,19 +87,36 @@ const AdminPage = () => {
         
         // Load stock data from all branches
         let allProducts = [];
+        let salesData = [];
+        let stockMovements = [];
+        
         try {
           for (const branch of branchesData) {
             const branchStock = await stockAPI.getByBranch(branch.id).catch(() => []);
             allProducts = [...allProducts, ...branchStock];
           }
+          
+          // Load sales analytics data
+          const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Sale_Items`);
+          if (response.ok) {
+            salesData = await response.json();
+          }
+          
+          // Load stock movements
+          const movementsResponse = await fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock_Movements`);
+          if (movementsResponse.ok) {
+            stockMovements = await movementsResponse.json();
+          }
         } catch (err) {
-          console.error('Failed to load stock data:', err);
+          console.error('Failed to load analytics data:', err);
         }
         
         return {
           employees: employeesData,
           branches: branchesData,
-          products: allProducts
+          products: allProducts,
+          salesAnalytics: salesData,
+          stockMovements: stockMovements
         };
       } catch (err) {
         console.error('Admin data loading failed:', err);
@@ -119,6 +136,8 @@ const AdminPage = () => {
   const employees = pageData?.employees || [];
   const branches = pageData?.branches || [];
   const products = pageData?.products || [];
+  const salesAnalytics = pageData?.salesAnalytics || [];
+  const stockMovements = pageData?.stockMovements || [];
 
   const createUserMutation = useMutation(
     (data) => hrAPI.createEmployee(data),
@@ -551,6 +570,7 @@ const AdminPage = () => {
           <Tab label="Users" />
           <Tab label="Branches" />
           <Tab label="Products" />
+          <Tab label="Sales Analytics" />
           <Tab label="Accounting" />
           <Tab label="Receipts" />
           <Tab label="Reports" />
@@ -681,19 +701,20 @@ const AdminPage = () => {
                   <TableCell>Product Name</TableCell>
                   <TableCell>Branch</TableCell>
                   <TableCell>Quantity</TableCell>
-                  <TableCell>Unit Price</TableCell>
+                  <TableCell>Reorder Level</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {products.map((product) => {
-                  const productBranch = branches.find(b => b.id === product.branch_id);
+                  const branchId = Array.isArray(product.branch_id) ? product.branch_id[0] : product.branch_id;
+                  const productBranch = branches.find(b => b.id === branchId);
                   return (
                     <TableRow key={product.id}>
                       <TableCell>{product.product_name}</TableCell>
-                      <TableCell>{productBranch?.branch_name || 'Unknown'}</TableCell>
+                      <TableCell>{productBranch?.branch_name || 'No Branch'}</TableCell>
                       <TableCell>{product.quantity_available}</TableCell>
-                      <TableCell>{formatCurrency(product.unit_price)}</TableCell>
+                      <TableCell>{product.reorder_level || 10}</TableCell>
                       <TableCell>
                         <IconButton onClick={() => handleEditProduct(product)}>
                           <Edit />
@@ -711,12 +732,92 @@ const AdminPage = () => {
         </Card>
       )}
 
-      {activeTab === 3 && <AccountingIntegration />}
-      {activeTab === 4 && <ReceiptCustomizer />}
-      {activeTab === 5 && <ReportsGenerator />}
-      {activeTab === 6 && <DocumentManager />}
+      {activeTab === 3 && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Sales Analytics & Stock Movements
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Track daily sales quantities and stock reductions per product
+            </Typography>
+            
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Product</TableCell>
+                  <TableCell>Quantity Sold</TableCell>
+                  <TableCell>Unit Price</TableCell>
+                  <TableCell>Subtotal</TableCell>
+                  <TableCell>Sale ID</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {salesAnalytics.length > 0 ? salesAnalytics.slice(0, 20).map((sale, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{new Date(sale.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>{sale.product_name}</TableCell>
+                    <TableCell>{sale.quantity_sold}</TableCell>
+                    <TableCell>{formatCurrency(sale.unit_price)}</TableCell>
+                    <TableCell>{formatCurrency(sale.subtotal)}</TableCell>
+                    <TableCell>{sale.sale_id}</TableCell>
+                  </TableRow>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      <Typography color="text.secondary">
+                        No sales data available
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            
+            {stockMovements.length > 0 && (
+              <Box sx={{ mt: 4 }}>
+                <Typography variant="h6" gutterBottom>
+                  Recent Stock Movements
+                </Typography>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Product</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell>Quantity</TableCell>
+                      <TableCell>From Branch</TableCell>
+                      <TableCell>To Branch</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {stockMovements.slice(0, 10).map((movement, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{new Date(movement.movement_date).toLocaleDateString()}</TableCell>
+                        <TableCell>{movement.product_name}</TableCell>
+                        <TableCell>
+                          <Chip label={movement.movement_type} size="small" />
+                        </TableCell>
+                        <TableCell>{movement.quantity}</TableCell>
+                        <TableCell>{movement.from_branch_name || 'N/A'}</TableCell>
+                        <TableCell>{movement.to_branch_name || 'N/A'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-      {activeTab === 7 && (
+      {activeTab === 4 && <AccountingIntegration />}
+      {activeTab === 5 && <ReceiptCustomizer />}
+      {activeTab === 6 && <ReportsGenerator />}
+      {activeTab === 7 && <DocumentManager />}
+
+      {activeTab === 8 && (
         <Box>
           <Typography variant="h6" gutterBottom>
             Historical Data Management
