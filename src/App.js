@@ -54,7 +54,7 @@ function AppContent() {
       <CssBaseline />
       <Router>
         {user && <Navbar openExternalPortal={openExternalPortal} />}
-        <div style={{ paddingTop: user ? '64px' : '0' }}>
+        <div style={{ paddingTop: user ? '64px' : '0', minHeight: '100vh' }}>
         {externalPortal ? (
           <ExternalPortal 
             url={externalPortal.url} 

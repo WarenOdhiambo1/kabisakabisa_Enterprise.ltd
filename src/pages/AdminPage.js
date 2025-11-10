@@ -84,10 +84,22 @@ const AdminPage = () => {
           hrAPI.getEmployees().catch(() => []),
           branchesAPI.getAll().catch(() => [])
         ]);
+        
+        // Load stock data from all branches
+        let allProducts = [];
+        try {
+          for (const branch of branchesData) {
+            const branchStock = await stockAPI.getByBranch(branch.id).catch(() => []);
+            allProducts = [...allProducts, ...branchStock];
+          }
+        } catch (err) {
+          console.error('Failed to load stock data:', err);
+        }
+        
         return {
           employees: employeesData,
           branches: branchesData,
-          products: []
+          products: allProducts
         };
       } catch (err) {
         console.error('Admin data loading failed:', err);
@@ -196,7 +208,7 @@ const AdminPage = () => {
   );
 
   const createProductMutation = useMutation(
-    (data) => adminAPI.createProduct(data),
+    (data) => stockAPI.addStock(data.branch_id[0], data),
     {
       onSuccess: () => {
         toast.success('Product added successfully!');
@@ -438,7 +450,7 @@ const AdminPage = () => {
               <Button
                 fullWidth
                 variant="outlined"
-                onClick={() => window.open('https://xero.com', '_blank')}
+                onClick={() => window.location.href = 'https://www.xero.com/'}
                 sx={{ color: '#13B5EA', borderColor: '#13B5EA' }}
               >
                 Xero Accounting
