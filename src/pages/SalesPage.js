@@ -220,50 +220,64 @@ const SalesPage = () => {
   };
 
   const ExpenseForm = () => {
-    const { register: registerExpense, handleSubmit: handleExpenseSubmit, watch: watchExpense } = useForm({
-      defaultValues: {
-        expense_date: new Date().toISOString().split('T')[0],
-        category: 'other'
-      }
-    });
+    const [expenseCategory, setExpenseCategory] = useState('other');
+    const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
+    const [amount, setAmount] = useState('');
+    const [vehiclePlate, setVehiclePlate] = useState('');
+    const [description, setDescription] = useState('');
 
-    const onSubmitExpense = (data) => {
-      if (!data.category || !data.amount || !data.expense_date) {
+    const onSubmitExpense = (e) => {
+      e.preventDefault();
+      
+      if (!expenseCategory || !amount || !expenseDate) {
         toast.error('Please fill in all required fields');
         return;
       }
       
+      if (parseFloat(amount) <= 0) {
+        toast.error('Amount must be greater than 0');
+        return;
+      }
+      
       recordExpenseMutation.mutate({
-        ...data,
-        amount: parseFloat(data.amount)
+        expense_date: expenseDate,
+        category: expenseCategory,
+        amount: parseFloat(amount),
+        vehicle_plate_number: vehiclePlate,
+        description: description
       });
     };
 
     return (
-      <Box component="form" onSubmit={handleExpenseSubmit(onSubmitExpense)}>
+      <Box component="form" onSubmit={onSubmitExpense}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
               label="Expense Date"
               type="date"
+              value={expenseDate}
+              onChange={(e) => setExpenseDate(e.target.value)}
               InputLabelProps={{ shrink: true }}
-              {...registerExpense('expense_date', { required: true })}
+              required
             />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Category *</InputLabel>
+            <FormControl fullWidth required>
+              <InputLabel>Category</InputLabel>
               <Select
-                {...registerExpense('category', { required: true })}
-                label="Category *"
-                value={watchExpense('category') || 'other'}
+                value={expenseCategory}
+                onChange={(e) => setExpenseCategory(e.target.value)}
+                label="Category"
               >
                 <MenuItem value="fuel">Fuel</MenuItem>
                 <MenuItem value="utilities">Utilities</MenuItem>
                 <MenuItem value="maintenance">Maintenance</MenuItem>
                 <MenuItem value="vehicle_related">Vehicle-related</MenuItem>
                 <MenuItem value="office_supplies">Office Supplies</MenuItem>
+                <MenuItem value="rent">Rent</MenuItem>
+                <MenuItem value="insurance">Insurance</MenuItem>
+                <MenuItem value="marketing">Marketing</MenuItem>
                 <MenuItem value="other">Other</MenuItem>
               </Select>
             </FormControl>
@@ -271,18 +285,21 @@ const SalesPage = () => {
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Amount *"
+              label="Amount"
               type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
               step="0.01"
               inputProps={{ min: 0 }}
-              {...registerExpense('amount', { required: true, min: 0.01 })}
+              required
             />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
               label="Vehicle Plate Number"
-              {...registerExpense('vehicle_plate_number')}
+              value={vehiclePlate}
+              onChange={(e) => setVehiclePlate(e.target.value)}
               helperText="Required for vehicle-related expenses"
             />
           </Grid>
@@ -292,7 +309,8 @@ const SalesPage = () => {
               label="Description"
               multiline
               rows={3}
-              {...registerExpense('description')}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               helperText="Optional: Add details about this expense"
             />
           </Grid>
