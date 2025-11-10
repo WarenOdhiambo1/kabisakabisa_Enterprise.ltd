@@ -31,7 +31,7 @@ const LoginPage = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const { register: registerMFA, handleSubmit: handleSubmitMFA } = useForm();
 
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = location.state?.from?.pathname;
 
   const onSubmit = async (data) => {
     setLoading(true);
@@ -47,11 +47,11 @@ const LoginPage = () => {
         setUserId(result.userId);
         setMfaStep('login');
       } else if (result.success) {
-        console.log('Login successful, navigating to:', from);
+        console.log('Login successful, navigating to dashboard for role-based redirect');
         toast.success('Login successful!');
-        // Small delay to ensure state is updated
+        // Always redirect to dashboard for role-based routing
         setTimeout(() => {
-          navigate(from, { replace: true });
+          navigate('/dashboard', { replace: true });
         }, 100);
       } else {
         console.log('Login result:', result);
@@ -101,7 +101,7 @@ const LoginPage = () => {
       const result = await loginWithMFA(loginData);
       if (result.success) {
         toast.success('Login successful!');
-        navigate(from, { replace: true });
+        navigate('/dashboard', { replace: true });
       }
     } catch (err) {
       setError(err.response?.data?.message || 'MFA login failed');

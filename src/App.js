@@ -149,29 +149,41 @@ function AppContent() {
 function DashboardRedirect() {
   const { user } = useAuth();
   
-  console.log('DashboardRedirect - user:', user, 'role:', user?.role);
+  console.log('DashboardRedirect - Full user object:', JSON.stringify(user, null, 2));
+  console.log('DashboardRedirect - user.role:', user?.role);
+  console.log('DashboardRedirect - typeof user.role:', typeof user?.role);
   
   if (!user) {
     console.log('No user in DashboardRedirect, redirecting to login');
     return <Navigate to="/login" replace />;
   }
   
+  const role = user?.role;
+  console.log('Switching on role:', role);
+  
   // Redirect to appropriate dashboard based on role
-  switch (user?.role) {
+  switch (role) {
     case 'boss':
-      return <Navigate to="/boss" />;
+      console.log('Redirecting to boss page');
+      return <Navigate to="/boss" replace />;
     case 'manager':
-      return <Navigate to="/manager" />;
+      console.log('Redirecting to manager page');
+      return <Navigate to="/manager" replace />;
     case 'hr':
-      return <Navigate to="/hr" />;
+      console.log('Redirecting to hr page');
+      return <Navigate to="/hr" replace />;
     case 'admin':
-      return <Navigate to="/admin" />;
+      console.log('Redirecting to admin page');
+      return <Navigate to="/admin" replace />;
     case 'sales':
-      return <Navigate to={`/sales/${user.branchId}`} />;
+      console.log('Redirecting to sales page');
+      return <Navigate to={`/sales/${user.branchId}`} replace />;
     case 'logistics':
-      return <Navigate to="/logistics" />;
+      console.log('Redirecting to logistics page');
+      return <Navigate to="/logistics" replace />;
     default:
-      return <Navigate to="/" />;
+      console.log('Unknown role, redirecting to home. Role was:', role);
+      return <Navigate to="/" replace />;
   }
 }
 
