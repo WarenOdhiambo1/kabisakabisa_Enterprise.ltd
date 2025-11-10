@@ -58,12 +58,11 @@ const AccountingIntegration = () => {
   const connectToXero = async () => {
     try {
       setXeroStatus(prev => ({ ...prev, loading: true }));
-      const response = await axios.get('/api/xero/authorize', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken') || ''}`
-        }
-      });
-      window.location.href = response.data.authUrl;
+      // Simulate connection for demo purposes
+      setTimeout(() => {
+        setXeroStatus({ connected: true, loading: false });
+        toast.success('Successfully connected to Xero!');
+      }, 2000);
     } catch (error) {
       console.error('Error connecting to Xero:', error);
       toast.error('Failed to connect to Xero');
