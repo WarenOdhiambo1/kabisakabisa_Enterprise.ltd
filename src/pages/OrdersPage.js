@@ -200,12 +200,11 @@ const OrdersPage = () => {
       }
       
       return {
-        orderItemId: item.id,
         productName: item.product_name,
         quantityOrdered: Number(item.quantity_ordered) || 0,
         branchDestinationId: branchId,
         purchasePrice: Number(item.purchase_price_per_unit) || 0,
-        productId: item.product_id || `PRD_${Date.now()}`
+        productId: `PRD_${Date.now()}_${index}`
       };
     }).filter(Boolean);
 

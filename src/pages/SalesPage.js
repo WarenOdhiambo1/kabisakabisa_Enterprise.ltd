@@ -41,6 +41,8 @@ const SalesPage = () => {
   const [showStockModal, setShowStockModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showFundsModal, setShowFundsModal] = useState(false);
+  const [showSalesSearch, setShowSalesSearch] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
 
   const { register, control, handleSubmit, watch, setValue, reset } = useForm({
     defaultValues: {
@@ -403,6 +405,7 @@ const SalesPage = () => {
         <Button
           variant="outlined"
           color="secondary"
+          onClick={() => setShowSalesSearch(true)}
         >
           Search Sales
         </Button>
@@ -634,6 +637,55 @@ const SalesPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowExpenseModal(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Sales Search Modal */}
+      <Dialog open={showSalesSearch} onClose={() => setShowSalesSearch(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Search Sales Records</DialogTitle>
+        <DialogContent>
+          <TableContainer sx={{ mt: 2, maxHeight: 400 }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Amount</TableCell>
+                  <TableCell>Payment Method</TableCell>
+                  <TableCell>Branch</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {(sales || []).map((sale) => (
+                  <TableRow key={sale.id} hover>
+                    <TableCell>
+                      {sale.sale_date ? new Date(sale.sale_date).toLocaleDateString() : 'N/A'}
+                    </TableCell>
+                    <TableCell>{formatCurrency(sale.total_amount || 0)}</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={sale.payment_method || 'N/A'} 
+                        size="small"
+                        color={sale.payment_method === 'cash' ? 'success' : 'default'}
+                      />
+                    </TableCell>
+                    <TableCell>{sale.branch_name || 'N/A'}</TableCell>
+                  </TableRow>
+                ))}
+                {(!sales || sales.length === 0) && (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center">
+                      <Typography color="text.secondary">
+                        No sales records found
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowSalesSearch(false)}>Close</Button>
         </DialogActions>
       </Dialog>
 
