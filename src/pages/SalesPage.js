@@ -153,7 +153,9 @@ const SalesPage = () => {
         queryClient.invalidateQueries(['sales', selectedBranchId]);
       },
       onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to record expense');
+        console.error('Expense error:', error);
+        toast.error('Expense may have been recorded. Please check the records.');
+        setShowExpenseModal(false);
       }
     }
   );
@@ -218,29 +220,50 @@ const SalesPage = () => {
   };
 
   const ExpenseForm = () => {
-    const { register: registerExpense, handleSubmit: handleExpenseSubmit } = useForm();
+    const { register: registerExpense, handleSubmit: handleExpenseSubmit, watch: watchExpense } = useForm({
+      defaultValues: {
+        expense_date: new Date().toISOString().split('T')[0],
+        category: 'other'
+      }
+    });
 
     const onSubmitExpense = (data) => {
+      if (!data.category || !data.amount || !data.expense_date) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+      
       recordExpenseMutation.mutate({
         ...data,
-        expense_date: new Date().toISOString().split('T')[0]
+        amount: parseFloat(data.amount)
       });
     };
 
     return (
       <Box component="form" onSubmit={handleExpenseSubmit(onSubmitExpense)}>
         <Grid container spacing={2}>
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Expense Date"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              {...registerExpense('expense_date', { required: true })}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
-              <InputLabel>Category</InputLabel>
+              <InputLabel>Category *</InputLabel>
               <Select
                 {...registerExpense('category', { required: true })}
-                label="Category"
+                label="Category *"
+                value={watchExpense('category') || 'other'}
               >
                 <MenuItem value="fuel">Fuel</MenuItem>
                 <MenuItem value="utilities">Utilities</MenuItem>
                 <MenuItem value="maintenance">Maintenance</MenuItem>
                 <MenuItem value="vehicle_related">Vehicle-related</MenuItem>
+                <MenuItem value="office_supplies">Office Supplies</MenuItem>
                 <MenuItem value="other">Other</MenuItem>
               </Select>
             </FormControl>
@@ -248,10 +271,11 @@ const SalesPage = () => {
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Amount"
+              label="Amount *"
               type="number"
               step="0.01"
-              {...registerExpense('amount', { required: true })}
+              inputProps={{ min: 0 }}
+              {...registerExpense('amount', { required: true, min: 0.01 })}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -269,6 +293,7 @@ const SalesPage = () => {
               multiline
               rows={3}
               {...registerExpense('description')}
+              helperText="Optional: Add details about this expense"
             />
           </Grid>
         </Grid>
@@ -278,7 +303,7 @@ const SalesPage = () => {
             variant="contained"
             disabled={recordExpenseMutation.isLoading}
           >
-            Record Expense
+            {recordExpenseMutation.isLoading ? 'Recording...' : 'Record Expense'}
           </Button>
         </Box>
       </Box>

@@ -199,8 +199,13 @@ const OrdersPage = () => {
     console.log('Complete order data:', data);
     console.log('Selected order:', selectedOrder);
     
-    if (!selectedOrder || !selectedOrder.items || selectedOrder.items.length === 0) {
-      toast.error('No order items found');
+    if (!selectedOrder) {
+      toast.error('No order selected');
+      return;
+    }
+    
+    if (!selectedOrder.items || selectedOrder.items.length === 0) {
+      toast.error('This order has no items to complete. Please check if the order was created properly.');
       return;
     }
 
@@ -809,11 +814,13 @@ const OrdersPage = () => {
                 This will mark the order as complete and automatically add all items to the selected branch stock.
               </Typography>
               
-              <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>
-                Items to Add to Stock
-              </Typography>
-              
-              {selectedOrder.items?.map((item, index) => (
+              {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                <>
+                  <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>
+                    Items to Add to Stock ({selectedOrder.items.length} items)
+                  </Typography>
+                  
+                  {selectedOrder.items.map((item, index) => (
                 <Grid container spacing={2} key={index} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
                   <Grid item xs={12}>
                     <Typography variant="subtitle1" fontWeight="bold">
@@ -852,7 +859,13 @@ const OrdersPage = () => {
                     </FormControl>
                   </Grid>
                 </Grid>
-              ))}
+                  ))}
+                </>
+              ) : (
+                <Typography variant="body2" color="error.main" sx={{ mt: 2, p: 2, bgcolor: 'error.light', borderRadius: 1 }}>
+                  ⚠️ This order has no items. The order may not have been created properly or items failed to save.
+                </Typography>
+              )}
               
               <Typography variant="body2" color="warning.main" sx={{ mt: 2 }}>
                 ⚠️ This action will:
