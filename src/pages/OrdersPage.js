@@ -42,6 +42,7 @@ const OrdersPage = () => {
   const [showAddOrder, setShowAddOrder] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showDelivery, setShowDelivery] = useState(false);
+  const [showComplete, setShowComplete] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showHistoricalData, setShowHistoricalData] = useState(false);
 
@@ -58,6 +59,7 @@ const OrdersPage = () => {
 
   const { register: registerPayment, handleSubmit: handlePaymentSubmit, reset: resetPayment } = useForm();
   const { register: registerDelivery, handleSubmit: handleDeliverySubmit, reset: resetDelivery } = useForm();
+  const { register: registerComplete, handleSubmit: handleCompleteSubmit, reset: resetComplete } = useForm();
 
   // Queries
   const { data: orders = [], isLoading, error } = useQuery(
@@ -113,6 +115,21 @@ const OrdersPage = () => {
     }
   );
 
+  const completeOrderMutation = useMutation(
+    ({ orderId, completedItems }) => ordersAPI.completeOrder(orderId, { completedItems }),
+    {
+      onSuccess: () => {
+        toast.success('Order completed successfully! Stock has been added to branches.');
+        setShowComplete(false);
+        resetComplete();
+        queryClient.invalidateQueries('ordersPageData');
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Failed to complete order');
+      }
+    }
+  );
+
   const deleteOrderMutation = useMutation(
     (orderId) => ordersAPI.delete(orderId),
     {
@@ -157,6 +174,22 @@ const OrdersPage = () => {
     markDeliveredMutation.mutate({
       orderId: selectedOrder.id,
       deliveredItems
+    });
+  };
+
+  const onSubmitComplete = (data) => {
+    const completedItems = selectedOrder.items.map((item, index) => ({
+      orderItemId: item.id,
+      productName: item.product_name,
+      quantityOrdered: item.quantity_ordered,
+      branchDestinationId: data[`branch_${index}`],
+      purchasePrice: item.purchase_price_per_unit,
+      productId: item.product_id || `PRD_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    }));
+
+    completeOrderMutation.mutate({
+      orderId: selectedOrder.id,
+      completedItems
     });
   };
 
@@ -359,9 +392,24 @@ const OrdersPage = () => {
                             }}
                             size="small"
                             color="success"
+                            title="Mark as Delivered"
                           >
                             <LocalShipping />
                           </IconButton>
+                        )}
+                        {['paid', 'partially_paid', 'delivered'].includes(order.status) && (
+                          <Button 
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setShowComplete(true);
+                            }}
+                            size="small"
+                            variant="contained"
+                            color="success"
+                            sx={{ ml: 1 }}
+                          >
+                            Complete
+                          </Button>
                         )}
                         <IconButton 
                           onClick={() => deleteOrderMutation.mutate(order.id)}
@@ -432,6 +480,7 @@ const OrdersPage = () => {
                     fullWidth
                     label="Product Name *"
                     {...register(`items.${index}.product_name`, { required: true })}
+                    helperText="Enter the full product name"
                   />
                 </Grid>
                 <Grid item xs={12} sm={2}>
@@ -466,6 +515,9 @@ const OrdersPage = () => {
                       {...register(`items.${index}.branch_destination_id`)}
                       label="Destination Branch"
                     >
+                      <MenuItem value="">
+                        <em>Select Later</em>
+                      </MenuItem>
                       {branches.map((branch) => (
                         <MenuItem key={branch.id} value={branch.id}>
                           {branch.branch_name}
@@ -499,6 +551,10 @@ const OrdersPage = () => {
                 Total: {formatCurrency(calculateTotal())}
               </Typography>
             </Box>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              ℹ️ You can assign products to branches later when completing the order.
+            </Typography>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -631,6 +687,87 @@ const OrdersPage = () => {
             disabled={markDeliveredMutation.isLoading}
           >
             Record Delivery
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Complete Order Dialog */}
+      <Dialog open={showComplete} onClose={() => setShowComplete(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Complete Order & Add Stock to Branches</DialogTitle>
+        <DialogContent>
+          {selectedOrder && (
+            <Box component="form" sx={{ mt: 2 }}>
+              <Typography variant="body1" gutterBottom>
+                Order: {selectedOrder.supplier_name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                This will mark the order as complete and automatically add all items to the selected branch stock.
+              </Typography>
+              
+              <Typography variant="h6" sx={{ mt: 2, mb: 2 }}>
+                Items to Add to Stock
+              </Typography>
+              
+              {selectedOrder.items?.map((item, index) => (
+                <Grid container spacing={2} key={index} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      {item.product_name}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    <TextField
+                      fullWidth
+                      label="Quantity"
+                      value={item.quantity_ordered}
+                      InputProps={{ readOnly: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    <TextField
+                      fullWidth
+                      label="Unit Price"
+                      value={`$${item.purchase_price_per_unit}`}
+                      InputProps={{ readOnly: true }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth required>
+                      <InputLabel>Destination Branch *</InputLabel>
+                      <Select
+                        {...registerComplete(`branch_${index}`, { required: true })}
+                        label="Destination Branch *"
+                      >
+                        {branches.map((branch) => (
+                          <MenuItem key={branch.id} value={branch.id}>
+                            {branch.branch_name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              ))}
+              
+              <Typography variant="body2" color="warning.main" sx={{ mt: 2 }}>
+                ⚠️ This action will:
+                <br />• Mark the order as completed
+                <br />• Add all items to the selected branch stock
+                <br />• Create stock movement records
+                <br />• This action cannot be undone
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowComplete(false)}>Cancel</Button>
+          <Button 
+            onClick={handleCompleteSubmit(onSubmitComplete)}
+            variant="contained"
+            color="success"
+            disabled={completeOrderMutation.isLoading}
+          >
+            Complete Order & Add Stock
           </Button>
         </DialogActions>
       </Dialog>

@@ -141,6 +141,7 @@ export const ordersAPI = {
     return api.post(`/orders/${encodeURIComponent(id)}/payment`, data).then(res => res.data);
   },
   markDelivered: (id, data) => api.post(`/orders/${id}/delivery`, data).then(res => res.data),
+  completeOrder: (id, data) => api.post(`/orders/${id}/complete`, data).then(res => res.data),
 };
 
 // HR API
