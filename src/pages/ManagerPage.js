@@ -28,7 +28,8 @@ import {
   Store,
   LocalShipping,
   ShoppingCart,
-  Assessment
+  Assessment,
+  AccountBalance
 } from '@mui/icons-material';
 import HistoricalDataViewer from '../components/HistoricalDataViewer';
 import { useQuery } from 'react-query';
@@ -156,6 +157,15 @@ const ManagerPage = () => {
             size="small"
           >
             HR
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<AccountBalance />}
+            onClick={() => window.open('https://go.xero.com/Dashboard/', '_blank')}
+            size="small"
+            sx={{ color: '#13B5EA', borderColor: '#13B5EA' }}
+          >
+            Xero
           </Button>
         </Box>
       </Box>
@@ -495,6 +505,20 @@ const ManagerPage = () => {
                     </Button>
                     <Typography variant="caption" color="text.secondary">
                       Business insights, performance metrics
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      startIcon={<AccountBalance />}
+                      onClick={() => window.open('https://go.xero.com/Dashboard/', '_blank')}
+                      sx={{ mb: 1, bgcolor: '#13B5EA', '&:hover': { bgcolor: '#0F9BD7' } }}
+                    >
+                      Xero Accounting
+                    </Button>
+                    <Typography variant="caption" color="text.secondary">
+                      Financial management, invoicing, reports
                     </Typography>
                   </Grid>
                 </Grid>

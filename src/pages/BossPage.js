@@ -28,7 +28,8 @@ import {
   People, 
   Assessment,
   GetApp,
-  History
+  History,
+  AccountBalance
 } from '@mui/icons-material';
 import { useQuery } from 'react-query';
 import QuickUpload from '../components/QuickUpload';
@@ -209,6 +210,14 @@ const BossPage = () => {
           onClick={() => handleExportReport('excel')}
         >
           Export Excel
+        </Button>
+        <Button
+          variant="contained"
+          startIcon={<AccountBalance />}
+          onClick={() => window.open('https://go.xero.com/Dashboard/', '_blank')}
+          sx={{ bgcolor: '#13B5EA', '&:hover': { bgcolor: '#0F9BD7' } }}
+        >
+          Xero Dashboard
         </Button>
         <Button
           variant="outlined"
@@ -392,6 +401,15 @@ const BossPage = () => {
                   <Typography variant="body2" color="text.secondary">
                     Monthly Growth Rate: +12.5%
                   </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<AccountBalance />}
+                    onClick={() => window.open('https://go.xero.com/Reports/', '_blank')}
+                    sx={{ mt: 2, color: '#13B5EA', borderColor: '#13B5EA' }}
+                    size="small"
+                  >
+                    View in Xero
+                  </Button>
                 </Box>
               </CardContent>
             </Card>
