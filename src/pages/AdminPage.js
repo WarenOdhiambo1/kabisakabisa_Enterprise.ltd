@@ -469,7 +469,7 @@ const AdminPage = () => {
               <Button
                 fullWidth
                 variant="outlined"
-                onClick={() => window.location.href = 'https://www.xero.com/'}
+                onClick={() => setActiveTab(4)}
                 sx={{ color: '#13B5EA', borderColor: '#13B5EA' }}
               >
                 Xero Accounting

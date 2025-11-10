@@ -42,6 +42,8 @@ const SalesPage = () => {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showFundsModal, setShowFundsModal] = useState(false);
   const [showSalesSearch, setShowSalesSearch] = useState(false);
+  const [searchDate, setSearchDate] = useState('');
+  const [filteredSales, setFilteredSales] = useState([]);
 
   const { register, control, handleSubmit, watch, setValue, reset } = useForm({
     defaultValues: {
@@ -643,7 +645,29 @@ const SalesPage = () => {
       <Dialog open={showSalesSearch} onClose={() => setShowSalesSearch(false)} maxWidth="md" fullWidth>
         <DialogTitle>Search Sales Records</DialogTitle>
         <DialogContent>
-          <TableContainer sx={{ mt: 2, maxHeight: 400 }}>
+          <Box sx={{ mb: 2, mt: 1 }}>
+            <TextField
+              fullWidth
+              label="Search by Date"
+              type="date"
+              value={searchDate}
+              onChange={(e) => {
+                setSearchDate(e.target.value);
+                if (e.target.value) {
+                  const filtered = (sales || []).filter(sale => {
+                    if (!sale.sale_date) return false;
+                    const saleDate = sale.sale_date.includes('T') ? sale.sale_date.split('T')[0] : sale.sale_date;
+                    return saleDate === e.target.value;
+                  });
+                  setFilteredSales(filtered);
+                } else {
+                  setFilteredSales(sales || []);
+                }
+              }}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Box>
+          <TableContainer sx={{ maxHeight: 400 }}>
             <Table size="small">
               <TableHead>
                 <TableRow>
@@ -654,7 +678,7 @@ const SalesPage = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {(sales || []).map((sale) => (
+                {(searchDate ? filteredSales : (sales || [])).map((sale) => (
                   <TableRow key={sale.id} hover>
                     <TableCell>
                       {sale.sale_date ? new Date(sale.sale_date).toLocaleDateString() : 'N/A'}
@@ -670,11 +694,11 @@ const SalesPage = () => {
                     <TableCell>{sale.branch_name || 'N/A'}</TableCell>
                   </TableRow>
                 ))}
-                {(!sales || sales.length === 0) && (
+                {(searchDate ? filteredSales.length === 0 : (!sales || sales.length === 0)) && (
                   <TableRow>
                     <TableCell colSpan={4} align="center">
                       <Typography color="text.secondary">
-                        No sales records found
+                        {searchDate ? 'No sales found for selected date' : 'No sales records found'}
                       </Typography>
                     </TableCell>
                   </TableRow>
