@@ -43,12 +43,12 @@ import { useAuth } from '../contexts/AuthContext';
 import QuickUpload from '../components/QuickUpload';
 import HistoricalDataViewer from '../components/HistoricalDataViewer';
 import { useForm } from 'react-hook-form';
-import { hrAPI, branchesAPI, dataAPI } from '../services/api';
+import { hrAPI, branchesAPI } from '../services/api';
 import { formatCurrency } from '../theme';
 import toast from 'react-hot-toast';
 
 const HRPage = () => {
-  const { user } = useAuth();
+  const {} = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
@@ -94,7 +94,6 @@ const HRPage = () => {
   );
 
   const isLoading = employeesLoading || payrollLoading || branchesLoading;
-  const error = null;
 
   // Filter employees based on search and filters (show all employees with status)
   const employees = useMemo(() => {
