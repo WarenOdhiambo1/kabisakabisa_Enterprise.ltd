@@ -73,15 +73,7 @@ const SalesPage = () => {
     { enabled: !!selectedBranchId }
   );
   
-  const { data: expenses = [] } = useQuery(
-    ['expenses', selectedBranchId],
-    () => {
-      if (!selectedBranchId) return Promise.resolve([]);
-      const filter = `FIND('${selectedBranchId}', ARRAYJOIN({branch_id}))`;
-      return api.get(`/data/Expenses?filter=${encodeURIComponent(filter)}`).then(res => res.data);
-    },
-    { enabled: !!selectedBranchId }
-  );
+
   
   const { data: branches = [] } = useQuery('branches', () => branchesAPI.getAll());
   
@@ -152,31 +144,6 @@ const SalesPage = () => {
         reset();
         queryClient.invalidateQueries(['stock', selectedBranchId]);
         queryClient.invalidateQueries(['sales', selectedBranchId]);
-      }
-    }
-  );
-
-  const recordExpenseMutation = useMutation(
-    (data) => {
-      // Use direct API call to Expenses table
-      const expenseData = {
-        ...data,
-        branch_id: selectedBranchId ? [selectedBranchId] : undefined,
-        created_by: [JSON.parse(localStorage.getItem('userData') || '{}').id || 'system']
-      };
-      
-      return api.post('/data/Expenses', expenseData).then(res => res.data);
-    },
-    {
-      onSuccess: (response) => {
-        toast.success('Expense recorded successfully!');
-        setShowExpenseModal(false);
-        queryClient.invalidateQueries(['expenses', selectedBranchId]);
-      },
-      onError: (error) => {
-        console.error('Expense recording error:', error);
-        const errorMessage = error.response?.data?.message || 'Failed to record expense';
-        toast.error(errorMessage);
       }
     }
   );
