@@ -32,8 +32,7 @@ import {
   ExpandMore,
   PlayArrow,
   CheckCircle,
-  Info,
-  Warning
+  Info
 } from '@mui/icons-material';
 import FinancialDashboard from '../components/FinancialDashboard';
 import { useAuth } from '../contexts/AuthContext';
