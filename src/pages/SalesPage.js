@@ -170,7 +170,6 @@ const SalesPage = () => {
     {
       onSuccess: (response) => {
         toast.success('Expense recorded successfully!');
-        resetExpenseForm();
         setShowExpenseModal(false);
         queryClient.invalidateQueries(['expenses', selectedBranchId]);
       },
