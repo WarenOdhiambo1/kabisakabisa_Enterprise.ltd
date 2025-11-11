@@ -20,7 +20,8 @@ import {
   DialogActions,
   Chip,
   IconButton,
-  Alert
+  Alert,
+  LinearProgress
 } from '@mui/material';
 import { Edit, Save, TrendingUp, TrendingDown, Assessment } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
@@ -32,33 +33,40 @@ const AdminFinanceSystem = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [buyingPrice, setBuyingPrice] = useState('');
 
-  // Fetch all required data
-  const { data: sales = [] } = useQuery(
+  // Fetch all required data with real-time updates
+  const { data: sales = [], isLoading: salesLoading } = useQuery(
     'sales-finance-admin',
     () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Sales`)
       .then(res => res.ok ? res.json() : []).catch(() => []),
-    { retry: false }
+    { refetchInterval: 10000, retry: false }
   );
 
   const { data: saleItems = [] } = useQuery(
     'sale-items-finance',
     () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Sale_Items`)
       .then(res => res.ok ? res.json() : []).catch(() => []),
-    { retry: false }
+    { refetchInterval: 10000, retry: false }
   );
 
   const { data: orders = [] } = useQuery(
     'orders-finance-admin',
     () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Orders`)
       .then(res => res.ok ? res.json() : []).catch(() => []),
-    { retry: false }
+    { refetchInterval: 30000, retry: false }
+  );
+
+  const { data: orderItems = [] } = useQuery(
+    'order-items-finance',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Order_Items`)
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { refetchInterval: 30000, retry: false }
   );
 
   const { data: stock = [] } = useQuery(
     'stock-finance-admin',
     () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock`)
       .then(res => res.ok ? res.json() : []).catch(() => []),
-    { retry: false }
+    { refetchInterval: 30000, retry: false }
   );
 
   const { data: branches = [] } = useQuery(
@@ -68,18 +76,73 @@ const AdminFinanceSystem = () => {
     { retry: false }
   );
 
+  // Create sample data for testing
+  const createSampleDataMutation = useMutation(
+    async () => {
+      const sampleData = [
+        {
+          table: 'Sales',
+          data: {
+            sale_date: new Date().toISOString().split('T')[0],
+            customer_name: 'Sample Customer',
+            total_amount: 150.00,
+            payment_method: 'cash',
+            branch_id: branches[0]?.id,
+            employee_id: 'sample_emp_id'
+          }
+        },
+        {
+          table: 'Sale_Items',
+          data: {
+            product_name: 'Sample Product A',
+            quantity_sold: 5,
+            unit_price: 20.00,
+            subtotal: 100.00,
+            branch_id: branches[0]?.id
+          }
+        },
+        {
+          table: 'Order_Items',
+          data: {
+            product_name: 'Sample Product A',
+            quantity: 10,
+            unit_cost: 12.00,
+            total_cost: 120.00
+          }
+        }
+      ];
+
+      for (const item of sampleData) {
+        await fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/${item.table}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item.data)
+        });
+      }
+    },
+    {
+      onSuccess: () => {
+        toast.success('Sample data created successfully!');
+        queryClient.invalidateQueries();
+      },
+      onError: () => {
+        toast.error('Failed to create sample data');
+      }
+    }
+  );
+
   // Calculate product profitability
   const calculateProductProfitability = () => {
     const productMap = new Map();
 
-    // Get buying prices from orders
-    orders.forEach(order => {
-      if (order.product_name && order.unit_cost) {
-        const existing = productMap.get(order.product_name) || {};
-        productMap.set(order.product_name, {
+    // Get buying prices from order items
+    orderItems.forEach(item => {
+      if (item.product_name && item.unit_cost) {
+        const existing = productMap.get(item.product_name) || {};
+        productMap.set(item.product_name, {
           ...existing,
-          product_name: order.product_name,
-          buying_price: order.unit_cost,
+          product_name: item.product_name,
+          buying_price: item.unit_cost,
           buying_price_source: 'order'
         });
       }
@@ -227,10 +290,21 @@ const AdminFinanceSystem = () => {
 
   return (
     <Box>
-      <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Assessment color="primary" />
-        Financial Analytics & Profit Management
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Assessment color="primary" />
+          Financial Analytics & Profit Management
+        </Typography>
+        <Button 
+          variant="outlined" 
+          onClick={() => createSampleDataMutation.mutate()}
+          disabled={createSampleDataMutation.isLoading}
+        >
+          Create Sample Data
+        </Button>
+      </Box>
+
+      {(salesLoading || createSampleDataMutation.isLoading) && <LinearProgress sx={{ mb: 2 }} />}
 
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -279,7 +353,7 @@ const AdminFinanceSystem = () => {
             Product Profitability Analysis
           </Typography>
           <Alert severity="info" sx={{ mb: 2 }}>
-            Buying prices are automatically fetched from Orders. Click edit to manually set missing prices.
+            Buying prices are automatically fetched from Order Items. Data refreshes every 10-30 seconds. Click edit to manually set missing prices.
           </Alert>
           <TableContainer component={Paper}>
             <Table>
