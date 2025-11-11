@@ -28,6 +28,7 @@ import {
 } from '@mui/material';
 import { Add, Edit, Delete, Business, Inventory, History } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useAuth } from '../contexts/AuthContext';
 import AccountingIntegration from '../components/AccountingIntegration';
 import ReceiptCustomizer from '../components/ReceiptCustomizer';
 import ReportsGenerator from '../components/ReportsGenerator';
@@ -39,6 +40,7 @@ import { formatCurrency } from '../theme';
 import toast from 'react-hot-toast';
 
 const AdminPage = () => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedBranchId] = useState('');
   const [activeTab, setActiveTab] = useState(0);
@@ -303,12 +305,14 @@ const AdminPage = () => {
       } else {
         cleanData.password = data.password.trim();
       }
+    } else if (!editingUser && ['admin', 'boss'].includes(user?.role)) {
+      toast.error('Password is required for new users');
+      return;
     }
     
     if (editingUser) {
       updateUserMutation.mutate({ id: editingUser.id, data: cleanData });
     } else {
-      // If no password provided, let backend generate one
       createUserMutation.mutate(cleanData);
     }
   };
@@ -888,14 +892,23 @@ const AdminPage = () => {
                 ))}
               </Select>
             </FormControl>
-            <TextField
-              fullWidth
-              label={editingUser ? "New Password (leave blank to keep current)" : "Password (optional - system will generate if empty)"}
-              type="password"
-              margin="normal"
-              helperText={editingUser ? "Only fill if you want to change the password" : "Leave empty for auto-generated secure password"}
-              {...register('password')}
-            />
+            {/* Only show password field for admin/boss */}
+            {(['admin', 'boss'].includes(user?.role)) && (
+              <TextField
+                fullWidth
+                label={editingUser ? "New Password (leave blank to keep current)" : "Password *"}
+                type="password"
+                margin="normal"
+                helperText={editingUser ? "Only fill if you want to change the password" : "Minimum 8 characters required"}
+                {...register('password', editingUser ? {} : { required: 'Password is required for new users', minLength: { value: 8, message: 'Password must be at least 8 characters' } })}
+                required={!editingUser}
+              />
+            )}
+            {user?.role === 'hr' && !editingUser && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, p: 1, bgcolor: 'info.light', borderRadius: 1 }}>
+                ℹ️ HR can create employee records. Admin will set the password later.
+              </Typography>
+            )}
             <TextField
               fullWidth
               label="Phone"

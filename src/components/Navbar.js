@@ -20,7 +20,8 @@ import {
   ShoppingCart,
   People,
   Business,
-  AccountBalance
+  AccountBalance,
+  Receipt
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -78,6 +79,7 @@ const Navbar = ({ openExternalPortal }) => {
   const canAccessLogistics = ['logistics', 'manager', 'boss'].includes(user?.role);
   const canAccessOrders = ['admin', 'manager', 'boss'].includes(user?.role);
   const canAccessHR = ['hr', 'manager', 'boss'].includes(user?.role);
+  const canAccessExpenses = ['admin', 'boss', 'manager', 'sales'].includes(user?.role);
   const canAccessBoss = user?.role === 'boss';
   const canAccessManager = user?.role === 'manager';
   const canAccessAdmin = user?.role === 'admin';
@@ -224,6 +226,17 @@ const Navbar = ({ openExternalPortal }) => {
               onClick={() => navigate('/orders')}
             >
               Orders
+            </Button>
+          )}
+
+          {/* Expenses */}
+          {canAccessExpenses && (
+            <Button
+              color="inherit"
+              startIcon={<Receipt />}
+              onClick={() => navigate('/expenses')}
+            >
+              Expenses
             </Button>
           )}
 

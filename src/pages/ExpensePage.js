@@ -1,0 +1,459 @@
+import React, { useState } from 'react';
+import {
+  Container,
+  Typography,
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Chip,
+  Paper,
+  IconButton
+} from '@mui/material';
+import { Add, Edit, Delete, Receipt, TrendingUp, Business } from '@mui/icons-material';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useForm } from 'react-hook-form';
+import { expensesAPI, branchesAPI, logisticsAPI } from '../services/api';
+import { formatCurrency } from '../theme';
+import toast from 'react-hot-toast';
+
+const ExpensePage = () => {
+  const queryClient = useQueryClient();
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
+
+  const { register, handleSubmit, reset, setValue, watch } = useForm({
+    defaultValues: {
+      expense_date: new Date().toISOString().split('T')[0],
+      category: '',
+      amount: '',
+      description: '',
+      vehicle_id: '',
+      receipt_number: '',
+      supplier_name: ''
+    }
+  });
+
+  // Queries
+  const { data: expenses = [], isLoading: expensesLoading } = useQuery(
+    ['expenses', selectedBranchId, dateRange],
+    () => expensesAPI.getAll({
+      branchId: selectedBranchId || undefined,
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate
+    }),
+    { enabled: true }
+  );
+
+  const { data: branches = [] } = useQuery('branches', () => branchesAPI.getAll());
+  const { data: vehicles = [] } = useQuery('vehicles', () => logisticsAPI.getVehicles().catch(() => []));
+  const { data: categories = [] } = useQuery('expenseCategories', () => expensesAPI.getCategories());
+
+  const { data: expenseSummary } = useQuery(
+    ['expenseSummary', selectedBranchId, dateRange],
+    () => expensesAPI.getSummary({
+      branchId: selectedBranchId || undefined,
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate
+    }),
+    { enabled: true }
+  );
+
+  // Mutations
+  const createExpenseMutation = useMutation(
+    (data) => expensesAPI.create(data),
+    {
+      onSuccess: () => {
+        toast.success('Expense created successfully!');
+        setShowExpenseModal(false);
+        reset();
+        queryClient.invalidateQueries(['expenses']);
+        queryClient.invalidateQueries(['expenseSummary']);
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Failed to create expense');
+      }
+    }
+  );
+
+  const updateExpenseMutation = useMutation(
+    ({ id, data }) => expensesAPI.update(id, data),
+    {
+      onSuccess: () => {
+        toast.success('Expense updated successfully!');
+        setShowExpenseModal(false);
+        setEditingExpense(null);
+        reset();
+        queryClient.invalidateQueries(['expenses']);
+        queryClient.invalidateQueries(['expenseSummary']);
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Failed to update expense');
+      }
+    }
+  );
+
+  const deleteExpenseMutation = useMutation(
+    (id) => expensesAPI.delete(id),
+    {
+      onSuccess: () => {
+        toast.success('Expense deleted successfully!');
+        queryClient.invalidateQueries(['expenses']);
+        queryClient.invalidateQueries(['expenseSummary']);
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Failed to delete expense');
+      }
+    }
+  );
+
+  const onSubmit = (data) => {
+    if (!data.expense_date || !data.category || !data.amount || !data.description) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (parseFloat(data.amount) <= 0) {
+      toast.error('Amount must be greater than 0');
+      return;
+    }
+
+    const payload = {
+      ...data,
+      branch_id: selectedBranchId || undefined,
+      vehicle_id: data.vehicle_id || undefined
+    };
+
+    if (editingExpense) {
+      updateExpenseMutation.mutate({ id: editingExpense.id, data: payload });
+    } else {
+      createExpenseMutation.mutate(payload);
+    }
+  };
+
+  const handleEdit = (expense) => {
+    setEditingExpense(expense);
+    setValue('expense_date', expense.expense_date);
+    setValue('category', expense.category);
+    setValue('amount', expense.amount);
+    setValue('description', expense.description);
+    setValue('vehicle_id', expense.vehicle_id?.[0] || '');
+    setValue('receipt_number', expense.receipt_number || '');
+    setValue('supplier_name', expense.supplier_name || '');
+    setShowExpenseModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowExpenseModal(false);
+    setEditingExpense(null);
+    reset();
+  };
+
+  const totalExpenses = expenses.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0);
+
+  if (expensesLoading) {
+    return (
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center' }}>
+        <div>Loading...</div>
+      </Container>
+    );
+  }
+
+  return (
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4">
+          Expense Management
+        </Typography>
+        
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Branch Filter</InputLabel>
+            <Select
+              value={selectedBranchId}
+              onChange={(e) => setSelectedBranchId(e.target.value)}
+              label="Branch Filter"
+              startAdornment={<Business sx={{ mr: 1, color: 'action.active' }} />}
+            >
+              <MenuItem value="">All Branches</MenuItem>
+              {branches.map((branch) => (
+                <MenuItem key={branch.id} value={branch.id}>
+                  {branch.branch_name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => setShowExpenseModal(true)}
+          >
+            Add Expense
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Date Range Filter */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={3}>
+              <TextField
+                fullWidth
+                label="Start Date"
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={3}>
+              <TextField
+                fullWidth
+                label="End Date"
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <TrendingUp color="primary" />
+                <Typography variant="h6">
+                  Total: {formatCurrency(totalExpenses)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  ({expenses.length} expenses)
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* Summary Cards */}
+      {expenseSummary && (
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          {expenseSummary.summary.slice(0, 4).map((categorySum) => {
+            const category = categories.find(c => c.value === categorySum.category);
+            return (
+              <Grid item xs={12} sm={6} md={3} key={categorySum.category}>
+                <Card>
+                  <CardContent>
+                    <Typography color="textSecondary" gutterBottom variant="body2">
+                      {category?.icon} {category?.label || categorySum.category}
+                    </Typography>
+                    <Typography variant="h6">
+                      {formatCurrency(categorySum.total_amount)}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {categorySum.count} expenses
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            );
+          })}
+        </Grid>
+      )}
+
+      {/* Expenses Table */}
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Expense Records
+          </Typography>
+          
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Category</TableCell>
+                  <TableCell>Amount</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell>Branch</TableCell>
+                  <TableCell>Vehicle</TableCell>
+                  <TableCell>Receipt #</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {expenses.map((expense) => {
+                  const category = categories.find(c => c.value === expense.category);
+                  return (
+                    <TableRow key={expense.id} hover>
+                      <TableCell>
+                        {expense.expense_date ? new Date(expense.expense_date).toLocaleDateString() : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={`${category?.icon || ''} ${category?.label || expense.category}`}
+                          size="small"
+                          color={expense.category === 'fuel' ? 'warning' : 'default'}
+                        />
+                      </TableCell>
+                      <TableCell>{formatCurrency(expense.amount || 0)}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                          {expense.description || 'N/A'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{expense.branch_name || 'N/A'}</TableCell>
+                      <TableCell>{expense.vehicle_plate_number || 'N/A'}</TableCell>
+                      <TableCell>{expense.receipt_number || '-'}</TableCell>
+                      <TableCell>
+                        <IconButton onClick={() => handleEdit(expense)} size="small">
+                          <Edit />
+                        </IconButton>
+                        <IconButton 
+                          onClick={() => deleteExpenseMutation.mutate(expense.id)} 
+                          size="small"
+                          color="error"
+                        >
+                          <Delete />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {expenses.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center">
+                      <Typography color="text.secondary" sx={{ py: 4 }}>
+                        No expenses found for the selected criteria
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+
+      {/* Add/Edit Expense Modal */}
+      <Dialog open={showExpenseModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
+        <DialogTitle>
+          {editingExpense ? 'Edit Expense' : 'Add New Expense'}
+        </DialogTitle>
+        <DialogContent>
+          <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Expense Date *"
+                  type="date"
+                  {...register('expense_date', { required: true })}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Category *</InputLabel>
+                  <Select
+                    {...register('category', { required: true })}
+                    label="Category *"
+                    value={watch('category') || ''}
+                  >
+                    {categories.map((cat) => (
+                      <MenuItem key={cat.value} value={cat.value}>
+                        {cat.icon} {cat.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Amount *"
+                  type="number"
+                  step="0.01"
+                  {...register('amount', { required: true, min: 0.01 })}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Receipt Number"
+                  {...register('receipt_number')}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Vehicle (Optional)</InputLabel>
+                  <Select
+                    {...register('vehicle_id')}
+                    label="Vehicle (Optional)"
+                    value={watch('vehicle_id') || ''}
+                  >
+                    <MenuItem value="">No Vehicle</MenuItem>
+                    {vehicles.map((vehicle) => (
+                      <MenuItem key={vehicle.id} value={vehicle.id}>
+                        {vehicle.plate_number} - {vehicle.vehicle_type}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Supplier Name"
+                  {...register('supplier_name')}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Description *"
+                  multiline
+                  rows={3}
+                  {...register('description', { required: true })}
+                  placeholder="Describe the business purpose of this expense..."
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseModal}>Cancel</Button>
+          <Button 
+            onClick={handleSubmit(onSubmit)} 
+            variant="contained"
+            disabled={createExpenseMutation.isLoading || updateExpenseMutation.isLoading}
+          >
+            {editingExpense ? 'Update' : 'Create'} Expense
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
+  );
+};
+
+export default ExpensePage;

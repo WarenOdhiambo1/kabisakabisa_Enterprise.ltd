@@ -21,6 +21,7 @@ import BossPage from './pages/BossPage';
 import ManagerPage from './pages/ManagerPage';
 import AdminPage from './pages/AdminPage';
 import DataManagementPage from './pages/DataManagementPage';
+import ExpensePage from './pages/ExpensePage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 
@@ -132,6 +133,12 @@ function AppContent() {
           <Route path="/data" element={
             <ProtectedRoute allowedRoles={['admin', 'boss']}>
               <DataManagementPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/expenses" element={
+            <ProtectedRoute allowedRoles={['admin', 'boss', 'manager', 'sales']}>
+              <ExpensePage />
             </ProtectedRoute>
           } />
 

@@ -31,7 +31,7 @@ import QuickUpload from '../components/QuickUpload';
 
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { salesAPI, stockAPI, branchesAPI, logisticsAPI } from '../services/api';
+import { salesAPI, stockAPI, branchesAPI, logisticsAPI, expensesAPI } from '../services/api';
 import api from '../services/api';
 import { formatCurrency } from '../theme';
 import toast from 'react-hot-toast';
@@ -225,36 +225,28 @@ const SalesPage = () => {
 
   const { data: branchExpenses = [] } = useQuery(
     ['expenses', selectedBranchId],
-    () => selectedBranchId ? api.get(`/data/Expenses?filter=${encodeURIComponent(`FIND('${selectedBranchId}', ARRAYJOIN({branch_id}))`)}`).then(res => res.data) : [],
+    () => selectedBranchId ? expensesAPI.getAll({ branchId: selectedBranchId }) : [],
     { enabled: !!selectedBranchId }
   );
 
-  // Expense categories for sales
-  const expenseCategories = [
-    { value: 'fuel', label: 'Fuel & Transportation' },
-    { value: 'office_supplies', label: 'Office Supplies' },
-    { value: 'utilities', label: 'Utilities (Phone, Internet)' },
-    { value: 'maintenance', label: 'Equipment Maintenance' },
-    { value: 'marketing', label: 'Marketing & Advertising' },
-    { value: 'meals', label: 'Business Meals' },
-    { value: 'travel', label: 'Travel Expenses' },
-    { value: 'other', label: 'Other Business Expenses' }
-  ];
+  const { data: expenseCategories = [] } = useQuery(
+    'expenseCategories',
+    () => expensesAPI.getCategories()
+  );
+
+
 
   const expenseMutation = useMutation(
     (data) => {
       const payload = {
         ...data,
-        amount: parseFloat(data.amount),
-        branch_id: selectedBranchId ? [selectedBranchId] : undefined,
-        created_by: [JSON.parse(localStorage.getItem('userData') || '{}').id || 'system'],
-        created_at: new Date().toISOString()
+        branch_id: selectedBranchId
       };
       
       if (editingExpense) {
-        return api.put(`/data/Expenses/${editingExpense.id}`, payload);
+        return expensesAPI.update(editingExpense.id, payload);
       } else {
-        return api.post('/data/Expenses', payload);
+        return expensesAPI.create(payload);
       }
     },
     {
@@ -326,7 +318,7 @@ const SalesPage = () => {
               >
                 {expenseCategories.map((cat) => (
                   <MenuItem key={cat.value} value={cat.value}>
-                    {cat.label}
+                    {cat.icon} {cat.label}
                   </MenuItem>
                 ))}
               </Select>
@@ -973,7 +965,7 @@ const SalesPage = () => {
                     </TableCell>
                     <TableCell>{formatCurrency(expense.amount || 0)}</TableCell>
                     <TableCell>{expense.receipt_number || '-'}</TableCell>
-                    <TableCell>{expense.vehicle_plate_number || 'N/A'}</TableCell>
+                    <TableCell>{expense.vehicle_plate_number || expense.vehicle_plate || 'N/A'}</TableCell>
                     <TableCell>
                       <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
                         {expense.description || 'N/A'}

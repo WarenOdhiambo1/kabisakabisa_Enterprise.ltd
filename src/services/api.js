@@ -219,6 +219,16 @@ export const documentsAPI = {
   deleteDocument: (documentId) => api.delete(`/documents/${documentId}`).then(res => res.data)
 };
 
+// Expenses API
+export const expensesAPI = {
+  getAll: (params) => api.get('/expenses', { params }).then(res => res.data),
+  create: (data) => api.post('/expenses', data).then(res => res.data),
+  update: (id, data) => api.put(`/expenses/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/expenses/${id}`).then(res => res.data),
+  getCategories: () => api.get('/expenses/categories').then(res => res.data),
+  getSummary: (params) => api.get('/expenses/summary', { params }).then(res => res.data),
+};
+
 // Enhanced Stock API with more endpoints
 export const stockAPIEnhanced = {
   ...stockAPI,
