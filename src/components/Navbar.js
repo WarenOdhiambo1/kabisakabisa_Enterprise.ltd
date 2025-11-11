@@ -80,6 +80,7 @@ const Navbar = ({ openExternalPortal }) => {
   const canAccessOrders = ['admin', 'manager', 'boss'].includes(user?.role);
   const canAccessHR = ['hr', 'manager', 'boss'].includes(user?.role);
   const canAccessExpenses = ['admin', 'boss', 'manager', 'sales'].includes(user?.role);
+  const canAccessFinance = ['admin', 'boss', 'manager'].includes(user?.role);
   const canAccessBoss = user?.role === 'boss';
   const canAccessManager = user?.role === 'manager';
   const canAccessAdmin = user?.role === 'admin';
@@ -237,6 +238,17 @@ const Navbar = ({ openExternalPortal }) => {
               onClick={() => navigate('/expenses')}
             >
               Expenses
+            </Button>
+          )}
+
+          {/* Finance */}
+          {canAccessFinance && (
+            <Button
+              color="inherit"
+              startIcon={<AccountBalance />}
+              onClick={() => navigate('/finance')}
+            >
+              Finance
             </Button>
           )}
 

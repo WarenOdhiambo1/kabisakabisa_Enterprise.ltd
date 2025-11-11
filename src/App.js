@@ -22,6 +22,7 @@ import ManagerPage from './pages/ManagerPage';
 import AdminPage from './pages/AdminPage';
 import DataManagementPage from './pages/DataManagementPage';
 import ExpensePage from './pages/ExpensePage';
+import FinancePage from './pages/FinancePage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 
@@ -139,6 +140,12 @@ function AppContent() {
           <Route path="/expenses" element={
             <ProtectedRoute allowedRoles={['admin', 'boss', 'manager', 'sales']}>
               <ExpensePage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/finance" element={
+            <ProtectedRoute allowedRoles={['admin', 'boss', 'manager']}>
+              <FinancePage />
             </ProtectedRoute>
           } />
 

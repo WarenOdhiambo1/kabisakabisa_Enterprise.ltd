@@ -32,11 +32,10 @@ import {
   AccountBalance
 } from '@mui/icons-material';
 import HistoricalDataViewer from '../components/HistoricalDataViewer';
-import FinancialDashboard from '../components/FinancialDashboard';
 import { useQuery } from 'react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { dataAPI } from '../services/api';
+
 import { formatCurrency } from '../theme';
 import {
   XAxis,
@@ -55,40 +54,67 @@ const ManagerPage = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [showHistoricalData, setShowHistoricalData] = useState(false);
 
-  const { data: dashboardData, isLoading, error } = useQuery(
-    ['managerDashboard', user?.branchId],
-    () => {
-      const branchId = user?.branchId || 'rec1XUFQQJxlwpX9T';
-      return dataAPI.getPageData('manager', { branchId });
-    },
-    { enabled: !!user }
+  // Simplified data loading with fallbacks
+  const { data: employees = [] } = useQuery(
+    'employees',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Employees`)
+      .then(res => res.ok ? res.json() : [])
+      .catch(() => []),
+    { enabled: !!user, retry: false }
   );
 
-  if (isLoading) {
-    return (
-      <Container maxWidth="xl" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center' }}>
-        <div>Loading...</div>
-      </Container>
-    );
-  }
+  const { data: stock = [] } = useQuery(
+    'stock',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock`)
+      .then(res => res.ok ? res.json() : [])
+      .catch(() => []),
+    { enabled: !!user, retry: false }
+  );
 
-  if (error) {
-    return (
-      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-        <Typography color="error">Error loading dashboard data</Typography>
-      </Container>
-    );
-  }
+  const { data: sales = [] } = useQuery(
+    'sales',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Sales`)
+      .then(res => res.ok ? res.json() : [])
+      .catch(() => []),
+    { enabled: !!user, retry: false }
+  );
 
-  const {
-    branch,
-    summary = {},
-    employees = [],
-    stock = [],
-    sales = [],
-    // lowStockItems = [],
-    weeklyData = []
-  } = dashboardData || {};
+  const { data: branches = [] } = useQuery(
+    'branches',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Branches`)
+      .then(res => res.ok ? res.json() : [])
+      .catch(() => []),
+    { enabled: !!user, retry: false }
+  );
+
+  // Calculate summary data
+  const todayRevenue = sales
+    .filter(sale => new Date(sale.sale_date).toDateString() === new Date().toDateString())
+    .reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
+  
+  const totalEmployees = employees.filter(emp => emp.is_active).length;
+  const totalStock = stock.length;
+  const lowStockAlerts = stock.filter(item => item.quantity_available <= (item.reorder_level || 10)).length;
+  
+  const summary = {
+    todayRevenue,
+    totalEmployees,
+    totalStock,
+    lowStockAlerts
+  };
+
+  const branch = user?.branchId ? branches.find(b => b.id === user.branchId) : null;
+  
+  // Weekly data for chart
+  const weeklyData = [
+    { name: 'Mon', sales: 4000, target: 3500 },
+    { name: 'Tue', sales: 3000, target: 3500 },
+    { name: 'Wed', sales: 2000, target: 3500 },
+    { name: 'Thu', sales: 2780, target: 3500 },
+    { name: 'Fri', sales: 1890, target: 3500 },
+    { name: 'Sat', sales: 2390, target: 3500 },
+    { name: 'Sun', sales: 3490, target: 3500 },
+  ];
 
   // const salesData = [
   //   { name: 'Mon', sales: 4000, target: 3500 },
@@ -264,7 +290,6 @@ const ManagerPage = () => {
           <Tab label="Staff" />
           <Tab label="Inventory" />
           <Tab label="Quick Actions" />
-          <Tab label="Financial Analytics" />
         </Tabs>
       </Box>
 
@@ -307,21 +332,28 @@ const ManagerPage = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {sales.slice(0, 5).map((sale) => (
-                        <TableRow key={sale.id}>
+                      {sales.slice(0, 5).map((sale, index) => (
+                        <TableRow key={sale.id || index}>
                           <TableCell>
-                            {new Date(sale.created_at).toLocaleTimeString()}
+                            {sale.created_at ? new Date(sale.created_at).toLocaleTimeString() : 'N/A'}
                           </TableCell>
-                          <TableCell>{formatCurrency(sale.total_amount)}</TableCell>
+                          <TableCell>{formatCurrency(sale.total_amount || 0)}</TableCell>
                           <TableCell>
                             <Chip 
-                              label={sale.payment_method} 
+                              label={sale.payment_method || 'Unknown'} 
                               size="small"
                               color={sale.payment_method === 'cash' ? 'success' : 'default'}
                             />
                           </TableCell>
                         </TableRow>
                       ))}
+                      {sales.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={3} align="center">
+                            <Typography color="text.secondary">No recent sales</Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -349,18 +381,18 @@ const ManagerPage = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {employees.map((employee) => (
-                    <TableRow key={employee.id}>
-                      <TableCell>{employee.full_name}</TableCell>
+                  {employees.slice(0, 10).map((employee, index) => (
+                    <TableRow key={employee.id || index}>
+                      <TableCell>{employee.full_name || 'N/A'}</TableCell>
                       <TableCell>
                         <Chip 
-                          label={employee.role} 
+                          label={employee.role || 'Unknown'} 
                           size="small"
                           color={getRoleColor(employee.role)}
                         />
                       </TableCell>
-                      <TableCell>{employee.email}</TableCell>
-                      <TableCell>{employee.hire_date}</TableCell>
+                      <TableCell>{employee.email || 'N/A'}</TableCell>
+                      <TableCell>{employee.hire_date || 'N/A'}</TableCell>
                       <TableCell>
                         <Chip 
                           label={employee.is_active ? 'Active' : 'Inactive'}
@@ -370,6 +402,13 @@ const ManagerPage = () => {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {employees.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        <Typography color="text.secondary">No employee data available</Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -394,20 +433,27 @@ const ManagerPage = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {stock.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.product_name}</TableCell>
-                      <TableCell>{item.quantity_available}</TableCell>
-                      <TableCell>{item.reorder_level}</TableCell>
+                  {stock.slice(0, 10).map((item, index) => (
+                    <TableRow key={item.id || index}>
+                      <TableCell>{item.product_name || 'N/A'}</TableCell>
+                      <TableCell>{item.quantity_available || 0}</TableCell>
+                      <TableCell>{item.reorder_level || 10}</TableCell>
                       <TableCell>
                         <Chip 
-                          label={item.quantity_available <= item.reorder_level ? 'Low Stock' : 'In Stock'}
-                          color={item.quantity_available <= item.reorder_level ? 'warning' : 'success'}
+                          label={(item.quantity_available || 0) <= (item.reorder_level || 10) ? 'Low Stock' : 'In Stock'}
+                          color={(item.quantity_available || 0) <= (item.reorder_level || 10) ? 'warning' : 'success'}
                           size="small"
                         />
                       </TableCell>
                     </TableRow>
                   ))}
+                  {stock.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">
+                        <Typography color="text.secondary">No stock data available</Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -530,9 +576,7 @@ const ManagerPage = () => {
         </Grid>
       )}
 
-      {activeTab === 4 && (
-        <FinancialDashboard userRole={user?.role} />
-      )}
+
 
       {/* Historical Data Viewer */}
       <HistoricalDataViewer 
