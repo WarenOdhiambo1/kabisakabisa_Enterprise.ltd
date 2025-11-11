@@ -72,7 +72,6 @@ const FinancialDashboard = ({ userRole }) => {
 
   const summary = analytics?.summary || {};
   const branchAnalysis = analytics?.branch_analysis || [];
-  const productAnalysis = analytics?.product_analysis || [];
   const products = productCosts?.products || [];
 
   return (
