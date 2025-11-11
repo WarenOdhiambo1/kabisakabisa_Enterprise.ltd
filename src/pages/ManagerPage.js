@@ -17,115 +17,141 @@ import {
   Tabs,
   Tab,
   Button,
-  Divider
+  Alert,
+  LinearProgress
 } from '@mui/material';
 import { 
   TrendingUp, 
   People, 
   Inventory, 
   Warning,
-  History,
   Store,
   LocalShipping,
   ShoppingCart,
   Assessment,
-  AccountBalance
+  AccountBalance,
+  Receipt
 } from '@mui/icons-material';
-import HistoricalDataViewer from '../components/HistoricalDataViewer';
-import ManagerFinanceDashboard from '../components/ManagerFinanceDashboard';
 import { useQuery } from 'react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-
 import { formatCurrency } from '../theme';
 import {
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  BarChart,
-  Bar,
-  ResponsiveContainer
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
 
 const ManagerPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
-  const [showHistoricalData, setShowHistoricalData] = useState(false);
 
-  // Simplified data loading with fallbacks
-  const { data: employees = [] } = useQuery(
-    'employees',
+  // Fetch all real-time data
+  const { data: employees = [], isLoading: employeesLoading } = useQuery(
+    'manager-employees',
     () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Employees`)
-      .then(res => res.ok ? res.json() : [])
-      .catch(() => []),
-    { enabled: !!user, retry: false }
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { refetchInterval: 30000, retry: false }
   );
 
-  const { data: stock = [] } = useQuery(
-    'stock',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock`)
-      .then(res => res.ok ? res.json() : [])
-      .catch(() => []),
-    { enabled: !!user, retry: false }
-  );
-
-  const { data: sales = [] } = useQuery(
-    'sales',
+  const { data: sales = [], isLoading: salesLoading } = useQuery(
+    'manager-sales',
     () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Sales`)
-      .then(res => res.ok ? res.json() : [])
-      .catch(() => []),
-    { enabled: !!user, retry: false }
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { refetchInterval: 10000, retry: false }
+  );
+
+  const { data: stock = [], isLoading: stockLoading } = useQuery(
+    'manager-stock',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock`)
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { refetchInterval: 30000, retry: false }
   );
 
   const { data: branches = [] } = useQuery(
-    'branches',
+    'manager-branches',
     () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Branches`)
-      .then(res => res.ok ? res.json() : [])
-      .catch(() => []),
-    { enabled: !!user, retry: false }
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { retry: false }
   );
 
-  // Calculate summary data
+  const { data: expenses = [] } = useQuery(
+    'manager-expenses',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Expenses`)
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { refetchInterval: 30000, retry: false }
+  );
+
+  const { data: orders = [] } = useQuery(
+    'manager-orders',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Orders`)
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { refetchInterval: 30000, retry: false }
+  );
+
+  const { data: vehicles = [] } = useQuery(
+    'manager-vehicles',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Vehicles`)
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { retry: false }
+  );
+
+  // Calculate real-time metrics
   const todayRevenue = sales
     .filter(sale => new Date(sale.sale_date).toDateString() === new Date().toDateString())
     .reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
-  
+
   const totalEmployees = employees.filter(emp => emp.is_active).length;
   const totalStock = stock.length;
-  const lowStockAlerts = stock.filter(item => item.quantity_available <= (item.reorder_level || 10)).length;
-  
-  const summary = {
-    todayRevenue,
-    totalEmployees,
-    totalStock,
-    lowStockAlerts
-  };
+  const lowStockAlerts = stock.filter(item => (item.quantity_available || 0) <= (item.reorder_level || 10)).length;
+  const totalExpenses = expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
+  const pendingOrders = orders.filter(order => order.status !== 'completed').length;
 
-  const branch = user?.branchId ? branches.find(b => b.id === user.branchId) : null;
-  
-  // Weekly data for chart
-  const weeklyData = [
-    { name: 'Mon', sales: 4000, target: 3500 },
-    { name: 'Tue', sales: 3000, target: 3500 },
-    { name: 'Wed', sales: 2000, target: 3500 },
-    { name: 'Thu', sales: 2780, target: 3500 },
-    { name: 'Fri', sales: 1890, target: 3500 },
-    { name: 'Sat', sales: 2390, target: 3500 },
-    { name: 'Sun', sales: 3490, target: 3500 },
-  ];
+  // Branch performance data
+  const branchPerformance = branches.map(branch => {
+    const branchSales = sales.filter(s => 
+      (Array.isArray(s.branch_id) ? s.branch_id[0] : s.branch_id) === branch.id
+    );
+    const branchEmployees = employees.filter(e => 
+      (Array.isArray(e.branch_id) ? e.branch_id[0] : e.branch_id) === branch.id
+    );
+    const revenue = branchSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
+    
+    return {
+      name: branch.branch_name,
+      revenue,
+      employees: branchEmployees.length,
+      sales_count: branchSales.length
+    };
+  });
 
-  // const salesData = [
-  //   { name: 'Mon', sales: 4000, target: 3500 },
-  //   { name: 'Tue', sales: 3000, target: 3500 },
-  //   { name: 'Wed', sales: 2000, target: 3500 },
-  //   { name: 'Thu', sales: 2780, target: 3500 },
-  //   { name: 'Fri', sales: 1890, target: 3500 },
-  //   { name: 'Sat', sales: 2390, target: 3500 },
-  //   { name: 'Sun', sales: 3490, target: 3500 },
-  // ];
+  // Role distribution
+  const roleDistribution = employees.reduce((acc, emp) => {
+    acc[emp.role] = (acc[emp.role] || 0) + 1;
+    return acc;
+  }, {});
+
+  const roleChartData = Object.entries(roleDistribution).map(([role, count]) => ({
+    name: role,
+    value: count,
+    color: {
+      admin: '#ff6b6b',
+      manager: '#4ecdc4',
+      hr: '#45b7d1',
+      sales: '#96ceb4',
+      logistics: '#feca57',
+      boss: '#ff9ff3'
+    }[role] || '#95a5a6'
+  }));
 
   const getRoleColor = (role) => {
     const colors = {
@@ -139,150 +165,134 @@ const ManagerPage = () => {
     return colors[role] || 'default';
   };
 
+  const isLoading = employeesLoading || salesLoading || stockLoading;
+
   return (
-    <Container maxWidth="xl" sx={{ mt: { xs: 2, md: 4 }, mb: { xs: 2, md: 4 }, px: { xs: 1, sm: 2 } }}>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom sx={{ m: 0 }}>
-          Manager Dashboard
+          Manager Dashboard - Real-time Overview
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Button
-            variant="outlined"
-            startIcon={<Store />}
-            onClick={() => {
-              const branchId = user?.branchId || branches[0]?.id || 'rec1XUFQQJxlwpX9T';
-              navigate(`/sales/${branchId}`);
-            }}
-            size="small"
-          >
-            Sales
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<Inventory />}
-            onClick={() => {
-              const branchId = user?.branchId || branches[0]?.id || 'rec1XUFQQJxlwpX9T';
-              navigate(`/stock/${branchId}`);
-            }}
-            size="small"
-          >
-            Stock
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<LocalShipping />}
-            onClick={() => navigate('/logistics')}
-            size="small"
-          >
-            Logistics
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<ShoppingCart />}
-            onClick={() => navigate('/orders')}
-            size="small"
-          >
-            Orders
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<People />}
-            onClick={() => navigate('/hr')}
-            size="small"
-          >
-            HR
-          </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
             variant="outlined"
             startIcon={<AccountBalance />}
             onClick={() => navigate('/finance')}
             size="small"
-            sx={{ color: '#1976d2', borderColor: '#1976d2' }}
           >
             Finance
           </Button>
-        </Box>
-      </Box>
-      
-      {branch && (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" color="text.secondary">
-            {branch.branch_name} Branch
-          </Typography>
           <Button
             variant="outlined"
-            startIcon={<History />}
-            onClick={() => setShowHistoricalData(true)}
-            color="info"
+            startIcon={<Receipt />}
+            onClick={() => navigate('/expenses')}
+            size="small"
           >
-            Historical Data
+            Expenses
           </Button>
         </Box>
-      )}
+      </Box>
 
+      {isLoading && <LinearProgress sx={{ mb: 2 }} />}
+
+      {/* Real-time KPI Cards */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={6} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={2}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <TrendingUp sx={{ fontSize: { xs: 30, md: 40 }, color: 'primary.main', mr: 1 }} />
+                <TrendingUp sx={{ fontSize: 30, color: 'primary.main', mr: 1 }} />
                 <Box>
-                  <Typography color="textSecondary" gutterBottom variant="body2">
+                  <Typography color="textSecondary" variant="body2">
                     Today's Sales
                   </Typography>
                   <Typography variant="h6">
-                    {formatCurrency(summary.todayRevenue || 0)}
+                    {formatCurrency(todayRevenue)}
                   </Typography>
                 </Box>
               </Box>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={6} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={2}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <People sx={{ fontSize: { xs: 30, md: 40 }, color: 'success.main', mr: 1 }} />
+                <People sx={{ fontSize: 30, color: 'success.main', mr: 1 }} />
                 <Box>
-                  <Typography color="textSecondary" gutterBottom variant="body2">
-                    Branch Staff
+                  <Typography color="textSecondary" variant="body2">
+                    Active Staff
                   </Typography>
                   <Typography variant="h6">
-                    {summary.totalEmployees || 0}
+                    {totalEmployees}
                   </Typography>
                 </Box>
               </Box>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={6} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={2}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Inventory sx={{ fontSize: { xs: 30, md: 40 }, color: 'info.main', mr: 1 }} />
+                <Inventory sx={{ fontSize: 30, color: 'info.main', mr: 1 }} />
                 <Box>
-                  <Typography color="textSecondary" gutterBottom variant="body2">
+                  <Typography color="textSecondary" variant="body2">
                     Stock Items
                   </Typography>
                   <Typography variant="h6">
-                    {summary.totalStock || 0}
+                    {totalStock}
                   </Typography>
                 </Box>
               </Box>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={6} sm={6} md={3}>
+        <Grid item xs={6} sm={6} md={2}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ py: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Warning sx={{ fontSize: 40, color: 'warning.main', mr: 2 }} />
+                <Warning sx={{ fontSize: 30, color: 'warning.main', mr: 1 }} />
                 <Box>
-                  <Typography color="textSecondary" gutterBottom>
-                    Low Stock Alerts
+                  <Typography color="textSecondary" variant="body2">
+                    Low Stock
                   </Typography>
-                  <Typography variant="h5">
-                    {summary.lowStockAlerts || 0}
+                  <Typography variant="h6">
+                    {lowStockAlerts}
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={6} sm={6} md={2}>
+          <Card>
+            <CardContent sx={{ py: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <ShoppingCart sx={{ fontSize: 30, color: 'secondary.main', mr: 1 }} />
+                <Box>
+                  <Typography color="textSecondary" variant="body2">
+                    Pending Orders
+                  </Typography>
+                  <Typography variant="h6">
+                    {pendingOrders}
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={6} sm={6} md={2}>
+          <Card>
+            <CardContent sx={{ py: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <LocalShipping sx={{ fontSize: 30, color: 'error.main', mr: 1 }} />
+                <Box>
+                  <Typography color="textSecondary" variant="body2">
+                    Vehicles
+                  </Typography>
+                  <Typography variant="h6">
+                    {vehicles.length}
                   </Typography>
                 </Box>
               </Box>
@@ -294,77 +304,58 @@ const ManagerPage = () => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
           <Tab label="Overview" />
-          <Tab label="Staff" />
+          <Tab label="HR Management" />
+          <Tab label="Sales Data" />
           <Tab label="Inventory" />
-          <Tab label="Quick Actions" />
-          <Tab label="Financial Overview" />
+          <Tab label="Orders & Logistics" />
         </Tabs>
       </Box>
 
       {activeTab === 0 && (
         <Grid container spacing={3}>
-          <Grid item xs={12} lg={8}>
+          <Grid item xs={12} md={8}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Weekly Sales Performance
+                  Branch Performance (Real-time)
                 </Typography>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={weeklyData}>
+                  <BarChart data={branchPerformance}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip />
+                    <Tooltip formatter={(value) => formatCurrency(value)} />
                     <Legend />
-                    <Bar dataKey="sales" fill="#8884d8" name="Actual Sales" />
-                    <Bar dataKey="target" fill="#82ca9d" name="Target" />
+                    <Bar dataKey="revenue" fill="#8884d8" name="Revenue" />
+                    <Bar dataKey="sales_count" fill="#82ca9d" name="Sales Count" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
           </Grid>
-
-          <Grid item xs={12} lg={4}>
+          <Grid item xs={12} md={4}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Recent Sales
+                  Staff Distribution
                 </Typography>
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Time</TableCell>
-                        <TableCell>Amount</TableCell>
-                        <TableCell>Payment</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {sales.slice(0, 5).map((sale, index) => (
-                        <TableRow key={sale.id || index}>
-                          <TableCell>
-                            {sale.created_at ? new Date(sale.created_at).toLocaleTimeString() : 'N/A'}
-                          </TableCell>
-                          <TableCell>{formatCurrency(sale.total_amount || 0)}</TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={sale.payment_method || 'Unknown'} 
-                              size="small"
-                              color={sale.payment_method === 'cash' ? 'success' : 'default'}
-                            />
-                          </TableCell>
-                        </TableRow>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={roleChartData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      dataKey="value"
+                    >
+                      {roleChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
-                      {sales.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={3} align="center">
-                            <Typography color="text.secondary">No recent sales</Typography>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           </Grid>
@@ -375,48 +366,52 @@ const ManagerPage = () => {
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Branch Staff
+              HR Management - All Employees (Real-time)
             </Typography>
-            <TableContainer component={Paper}>
-              <Table>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Total Employees: {employees.length} | Active: {totalEmployees} | 
+              Last Updated: {new Date().toLocaleTimeString()}
+            </Alert>
+            <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
+              <Table stickyHeader>
                 <TableHead>
                   <TableRow>
                     <TableCell>Name</TableCell>
                     <TableCell>Role</TableCell>
+                    <TableCell>Branch</TableCell>
                     <TableCell>Email</TableCell>
                     <TableCell>Hire Date</TableCell>
                     <TableCell>Status</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {employees.slice(0, 10).map((employee, index) => (
-                    <TableRow key={employee.id || index}>
-                      <TableCell>{employee.full_name || 'N/A'}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={employee.role || 'Unknown'} 
-                          size="small"
-                          color={getRoleColor(employee.role)}
-                        />
-                      </TableCell>
-                      <TableCell>{employee.email || 'N/A'}</TableCell>
-                      <TableCell>{employee.hire_date || 'N/A'}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={employee.is_active ? 'Active' : 'Inactive'}
-                          color={employee.is_active ? 'success' : 'default'}
-                          size="small"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {employees.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} align="center">
-                        <Typography color="text.secondary">No employee data available</Typography>
-                      </TableCell>
-                    </TableRow>
-                  )}
+                  {employees.map((employee, index) => {
+                    const employeeBranch = branches.find(b => 
+                      b.id === (Array.isArray(employee.branch_id) ? employee.branch_id[0] : employee.branch_id)
+                    );
+                    return (
+                      <TableRow key={employee.id || index}>
+                        <TableCell>{employee.full_name || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={employee.role || 'Unknown'} 
+                            size="small"
+                            color={getRoleColor(employee.role)}
+                          />
+                        </TableCell>
+                        <TableCell>{employeeBranch?.branch_name || 'No Branch'}</TableCell>
+                        <TableCell>{employee.email || 'N/A'}</TableCell>
+                        <TableCell>{employee.hire_date || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={employee.is_active ? 'Active' : 'Inactive'}
+                            color={employee.is_active ? 'success' : 'default'}
+                            size="small"
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -428,40 +423,49 @@ const ManagerPage = () => {
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Inventory Status
+              Sales Data - All Transactions (Real-time)
             </Typography>
-            <TableContainer component={Paper}>
-              <Table>
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Total Sales: {sales.length} | Today's Revenue: {formatCurrency(todayRevenue)} | 
+              Last Updated: {new Date().toLocaleTimeString()}
+            </Alert>
+            <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
+              <Table stickyHeader>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Product</TableCell>
-                    <TableCell>Available</TableCell>
-                    <TableCell>Reorder Level</TableCell>
-                    <TableCell>Status</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell>Branch</TableCell>
+                    <TableCell align="right">Amount</TableCell>
+                    <TableCell>Payment Method</TableCell>
+                    <TableCell>Employee</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {stock.slice(0, 10).map((item, index) => (
-                    <TableRow key={item.id || index}>
-                      <TableCell>{item.product_name || 'N/A'}</TableCell>
-                      <TableCell>{item.quantity_available || 0}</TableCell>
-                      <TableCell>{item.reorder_level || 10}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={(item.quantity_available || 0) <= (item.reorder_level || 10) ? 'Low Stock' : 'In Stock'}
-                          color={(item.quantity_available || 0) <= (item.reorder_level || 10) ? 'warning' : 'success'}
-                          size="small"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {stock.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} align="center">
-                        <Typography color="text.secondary">No stock data available</Typography>
-                      </TableCell>
-                    </TableRow>
-                  )}
+                  {sales.slice(0, 50).map((sale, index) => {
+                    const saleBranch = branches.find(b => 
+                      b.id === (Array.isArray(sale.branch_id) ? sale.branch_id[0] : sale.branch_id)
+                    );
+                    const saleEmployee = employees.find(e => 
+                      e.id === (Array.isArray(sale.employee_id) ? sale.employee_id[0] : sale.employee_id)
+                    );
+                    return (
+                      <TableRow key={sale.id || index}>
+                        <TableCell>{sale.sale_date ? new Date(sale.sale_date).toLocaleDateString() : 'N/A'}</TableCell>
+                        <TableCell>{sale.customer_name || 'Walk-in Customer'}</TableCell>
+                        <TableCell>{saleBranch?.branch_name || 'Unknown'}</TableCell>
+                        <TableCell align="right">{formatCurrency(sale.total_amount || 0)}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={sale.payment_method || 'Unknown'} 
+                            size="small"
+                            color={sale.payment_method === 'cash' ? 'success' : 'default'}
+                          />
+                        </TableCell>
+                        <TableCell>{saleEmployee?.full_name || 'Unknown'}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -470,136 +474,146 @@ const ManagerPage = () => {
       )}
 
       {activeTab === 3 && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Inventory Management - All Stock (Real-time)
+            </Typography>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              Total Items: {stock.length} | Low Stock Alerts: {lowStockAlerts} | 
+              Last Updated: {new Date().toLocaleTimeString()}
+            </Alert>
+            <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Product Name</TableCell>
+                    <TableCell>Branch</TableCell>
+                    <TableCell align="right">Available</TableCell>
+                    <TableCell align="right">Reorder Level</TableCell>
+                    <TableCell align="right">Unit Price</TableCell>
+                    <TableCell>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {stock.map((item, index) => {
+                    const stockBranch = branches.find(b => 
+                      b.id === (Array.isArray(item.branch_id) ? item.branch_id[0] : item.branch_id)
+                    );
+                    const isLowStock = (item.quantity_available || 0) <= (item.reorder_level || 10);
+                    return (
+                      <TableRow key={item.id || index} sx={{ bgcolor: isLowStock ? 'warning.light' : 'inherit' }}>
+                        <TableCell>{item.product_name || 'N/A'}</TableCell>
+                        <TableCell>{stockBranch?.branch_name || 'Unknown'}</TableCell>
+                        <TableCell align="right">{item.quantity_available || 0}</TableCell>
+                        <TableCell align="right">{item.reorder_level || 10}</TableCell>
+                        <TableCell align="right">{formatCurrency(item.unit_price || 0)}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={isLowStock ? 'Low Stock' : 'In Stock'}
+                            color={isLowStock ? 'warning' : 'success'}
+                            size="small"
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === 4 && (
         <Grid container spacing={3}>
-          <Grid item xs={12}>
+          <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Quick Actions & System Access
+                  Purchase Orders (Real-time)
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<Store />}
-                      onClick={() => {
-                        const branchId = user?.branchId || branches[0]?.id || 'rec1XUFQQJxlwpX9T';
-                        navigate(`/sales/${branchId}`);
-                      }}
-                      sx={{ mb: 1 }}
-                    >
-                      Sales Management
-                    </Button>
-                    <Typography variant="caption" color="text.secondary">
-                      Record sales, view reports, manage transactions
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<Inventory />}
-                      onClick={() => {
-                        const branchId = user?.branchId || branches[0]?.id || 'rec1XUFQQJxlwpX9T';
-                        navigate(`/stock/${branchId}`);
-                      }}
-                      sx={{ mb: 1 }}
-                    >
-                      Stock Management
-                    </Button>
-                    <Typography variant="caption" color="text.secondary">
-                      Manage inventory, transfers, stock levels
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<LocalShipping />}
-                      onClick={() => navigate('/logistics')}
-                      sx={{ mb: 1 }}
-                    >
-                      Logistics
-                    </Button>
-                    <Typography variant="caption" color="text.secondary">
-                      Vehicle management, trips, maintenance
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<ShoppingCart />}
-                      onClick={() => navigate('/orders')}
-                      sx={{ mb: 1 }}
-                    >
-                      Purchase Orders
-                    </Button>
-                    <Typography variant="caption" color="text.secondary">
-                      Create orders, track deliveries, payments
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<People />}
-                      onClick={() => navigate('/hr')}
-                      sx={{ mb: 1 }}
-                    >
-                      HR Management
-                    </Button>
-                    <Typography variant="caption" color="text.secondary">
-                      Employee management, payroll, reports
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<Assessment />}
-                      onClick={() => navigate('/boss')}
-                      sx={{ mb: 1 }}
-                    >
-                      Reports & Analytics
-                    </Button>
-                    <Typography variant="caption" color="text.secondary">
-                      Business insights, performance metrics
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={4}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<AccountBalance />}
-                      onClick={() => navigate('/finance')}
-                      sx={{ mb: 1 }}
-                    >
-                      Financial Management
-                    </Button>
-                    <Typography variant="caption" color="text.secondary">
-                      Comprehensive financial system, P&L, invoicing
-                    </Typography>
-                  </Grid>
-                </Grid>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  Total Orders: {orders.length} | Pending: {pendingOrders}
+                </Alert>
+                <TableContainer component={Paper} sx={{ maxHeight: 400 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Supplier</TableCell>
+                        <TableCell>Date</TableCell>
+                        <TableCell align="right">Amount</TableCell>
+                        <TableCell>Status</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {orders.slice(0, 20).map((order, index) => (
+                        <TableRow key={order.id || index}>
+                          <TableCell>{order.supplier_name || 'N/A'}</TableCell>
+                          <TableCell>{order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}</TableCell>
+                          <TableCell align="right">{formatCurrency(order.total_amount || 0)}</TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={order.status || 'Unknown'} 
+                              size="small"
+                              color={order.status === 'completed' ? 'success' : 'warning'}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Vehicle Fleet
+                </Typography>
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  Total Vehicles: {vehicles.length}
+                </Alert>
+                <TableContainer component={Paper} sx={{ maxHeight: 400 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Plate Number</TableCell>
+                        <TableCell>Type</TableCell>
+                        <TableCell>Branch</TableCell>
+                        <TableCell>Status</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {vehicles.map((vehicle, index) => {
+                        const vehicleBranch = branches.find(b => 
+                          b.id === (Array.isArray(vehicle.current_branch_id) ? vehicle.current_branch_id[0] : vehicle.current_branch_id)
+                        );
+                        return (
+                          <TableRow key={vehicle.id || index}>
+                            <TableCell>{vehicle.plate_number || 'N/A'}</TableCell>
+                            <TableCell>{vehicle.vehicle_type || 'N/A'}</TableCell>
+                            <TableCell>{vehicleBranch?.branch_name || 'Unassigned'}</TableCell>
+                            <TableCell>
+                              <Chip 
+                                label={vehicle.status || 'Unknown'} 
+                                size="small"
+                                color={vehicle.status === 'active' ? 'success' : 'warning'}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               </CardContent>
             </Card>
           </Grid>
         </Grid>
       )}
-
-      {activeTab === 4 && (
-        <ManagerFinanceDashboard />
-      )}
-
-      {/* Historical Data Viewer */}
-      <HistoricalDataViewer 
-        open={showHistoricalData}
-        onClose={() => setShowHistoricalData(false)}
-        title="Manager Historical Data"
-      />
     </Container>
   );
 };
