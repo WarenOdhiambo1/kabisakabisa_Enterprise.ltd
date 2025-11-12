@@ -49,101 +49,161 @@ const StockPage = () => {
   const { register, handleSubmit, reset, setValue } = useForm();
   const { register: registerTransfer, handleSubmit: handleTransferSubmit, reset: resetTransfer } = useForm();
 
-  // Queries
-  const { data: pageData, isLoading, error } = useQuery(
-    ['stockPageData', branchId],
-    () => dataAPI.getPageData('stock', { branchId }),
-    { enabled: !!branchId }
+  // Queries - Use real-time data loading
+  const { data: stock = [], isLoading: stockLoading } = useQuery(
+    ['stock', branchId],
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock`)
+      .then(res => res.ok ? res.json() : []).catch(() => [])
+      .then(data => branchId ? data.filter(item => {
+        const itemBranchId = Array.isArray(item.branch_id) ? item.branch_id[0] : item.branch_id;
+        return itemBranchId === branchId;
+      }) : data),
+    { enabled: !!branchId, refetchInterval: 30000, retry: false }
   );
 
-  const stock = pageData?.stock || [];
-  const pendingTransfers = pageData?.transfers || [];
-  // const movements = pageData?.movements || [];
+  const { data: pendingTransfers = [], isLoading: transfersLoading } = useQuery(
+    ['transfers', branchId],
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock_Movements`)
+      .then(res => res.ok ? res.json() : []).catch(() => [])
+      .then(data => data.filter(transfer => transfer.status === 'pending')),
+    { refetchInterval: 30000, retry: false }
+  );
 
-  const { data: branches = [] } = useQuery('branches', () => branchesAPI.getAll());
+  const { data: branches = [] } = useQuery(
+    'branches',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Branches`)
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { retry: false }
+  );
+
+  const isLoading = stockLoading || transfersLoading;
+  const error = null;
 
   // Mutations
   const addStockMutation = useMutation(
-    (data) => stockAPI.addStock(branchId, data),
+    (data) => {
+      const stockData = {
+        ...data,
+        branch_id: branchId,
+        last_updated: new Date().toISOString()
+      };
+      return fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(stockData)
+      }).then(res => res.json());
+    },
     {
       onSuccess: () => {
         toast.success('Stock added successfully!');
         setShowAddStock(false);
         reset();
-        queryClient.invalidateQueries(['stockPageData', branchId]);
+        queryClient.invalidateQueries(['stock', branchId]);
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to add stock');
+      onError: () => {
+        toast.error('Failed to add stock');
       }
     }
   );
 
   const updateStockMutation = useMutation(
-    ({ id, data }) => stockAPI.updateStock(id, data),
+    ({ id, data }) => {
+      const updateData = {
+        ...data,
+        last_updated: new Date().toISOString()
+      };
+      return fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData)
+      }).then(res => res.json());
+    },
     {
       onSuccess: () => {
         toast.success('Stock updated successfully!');
         setEditingStock(null);
         setShowAddStock(false);
         reset();
-        queryClient.invalidateQueries(['stockPageData', branchId]);
+        queryClient.invalidateQueries(['stock', branchId]);
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to update stock');
+      onError: () => {
+        toast.error('Failed to update stock');
       }
     }
   );
 
   const deleteStockMutation = useMutation(
-    (id) => stockAPI.deleteStock(id),
+    (id) => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock/${id}`, {
+      method: 'DELETE'
+    }),
     {
       onSuccess: () => {
         toast.success('Stock deleted successfully!');
-        queryClient.invalidateQueries(['stockPageData', branchId]);
+        queryClient.invalidateQueries(['stock', branchId]);
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to delete stock');
+      onError: () => {
+        toast.error('Failed to delete stock');
       }
     }
   );
 
   const transferStockMutation = useMutation(
-    (data) => stockAPI.transfer(data),
+    (data) => {
+      const transferData = {
+        ...data,
+        movement_type: 'transfer',
+        movement_date: new Date().toISOString().split('T')[0],
+        status: 'pending'
+      };
+      return fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock_Movements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(transferData)
+      }).then(res => res.json());
+    },
     {
       onSuccess: () => {
         toast.success('Stock transfer initiated successfully!');
         setShowTransfer(false);
         resetTransfer();
-        queryClient.invalidateQueries(['stockPageData', branchId]);
+        queryClient.invalidateQueries(['transfers', branchId]);
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to initiate transfer');
+      onError: () => {
+        toast.error('Failed to initiate transfer');
       }
     }
   );
 
   const approveTransferMutation = useMutation(
-    (transferId) => stockAPI.approveTransfer(transferId),
+    (transferId) => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock_Movements/${transferId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'approved' })
+    }).then(res => res.json()),
     {
       onSuccess: () => {
         toast.success('Transfer approved successfully!');
-        queryClient.invalidateQueries(['stockPageData', branchId]);
+        queryClient.invalidateQueries(['transfers', branchId]);
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to approve transfer');
+      onError: () => {
+        toast.error('Failed to approve transfer');
       }
     }
   );
 
   const rejectTransferMutation = useMutation(
-    (transferId) => stockAPI.rejectTransfer(transferId),
+    (transferId) => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock_Movements/${transferId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'rejected' })
+    }).then(res => res.json()),
     {
       onSuccess: () => {
         toast.success('Transfer rejected successfully!');
-        queryClient.invalidateQueries(['stockPageData', branchId]);
+        queryClient.invalidateQueries(['transfers', branchId]);
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to reject transfer');
+      onError: () => {
+        toast.error('Failed to reject transfer');
       }
     }
   );

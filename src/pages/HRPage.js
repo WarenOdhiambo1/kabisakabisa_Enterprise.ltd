@@ -64,33 +64,26 @@ const HRPage = () => {
   const { register, handleSubmit, reset, setValue } = useForm();
   const { register: registerPayroll, handleSubmit: handlePayrollSubmit, reset: resetPayroll } = useForm();
 
-  // Queries - Load employees and branches separately
+  // Queries - Load employees and branches with real-time data
   const { data: allEmployees = [], isLoading: employeesLoading } = useQuery(
     'employees',
-    () => hrAPI.getEmployees(),
-    { staleTime: 2 * 60 * 1000 }
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Employees`)
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { refetchInterval: 30000, retry: false }
   );
 
   const { data: allPayroll = [], isLoading: payrollLoading } = useQuery(
     'payroll',
-    () => hrAPI.getPayroll(),
-    { staleTime: 2 * 60 * 1000 }
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Payroll`)
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { refetchInterval: 30000, retry: false }
   );
   
   const { data: branches = [], isLoading: branchesLoading } = useQuery(
     'branches',
-    async () => {
-      try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/hr/branches`);
-        const branchData = await response.json();
-        console.log('Branches loaded:', branchData);
-        return branchData;
-      } catch (error) {
-        console.error('Failed to load branches:', error);
-        return [];
-      }
-    },
-    { staleTime: 5 * 60 * 1000 }
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Branches`)
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { retry: false }
   );
 
   const isLoading = employeesLoading || payrollLoading || branchesLoading;
@@ -154,32 +147,40 @@ const HRPage = () => {
 
   // Mutations
   const createEmployeeMutation = useMutation(
-    (data) => hrAPI.createEmployee(data),
+    (data) => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Employees`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(res => res.json()),
     {
       onSuccess: (response) => {
-        toast.success(`Employee ${response.full_name} created successfully!`);
+        toast.success(`Employee ${response.full_name || 'created'} successfully!`);
         setShowAddEmployee(false);
         reset();
         queryClient.invalidateQueries('employees');
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to create employee');
+      onError: () => {
+        toast.error('Failed to create employee');
       }
     }
   );
 
   const updateEmployeeMutation = useMutation(
-    ({ id, data }) => hrAPI.updateEmployee(id, data),
+    ({ id, data }) => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Employees/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(res => res.json()),
     {
       onSuccess: (response) => {
-        toast.success(`Employee ${response.full_name} updated successfully!`);
+        toast.success(`Employee updated successfully!`);
         setEditingEmployee(null);
         setShowAddEmployee(false);
         reset();
         queryClient.invalidateQueries('employees');
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to update employee');
+      onError: () => {
+        toast.error('Failed to update employee');
       }
     }
   );
@@ -198,7 +199,11 @@ const HRPage = () => {
   );
 
   const generatePayrollMutation = useMutation(
-    (data) => hrAPI.generatePayroll(data),
+    (data) => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Payroll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(res => res.json()),
     {
       onSuccess: () => {
         toast.success('Payroll generated successfully!');
@@ -206,8 +211,8 @@ const HRPage = () => {
         resetPayroll();
         queryClient.invalidateQueries('payroll');
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to generate payroll');
+      onError: () => {
+        toast.error('Failed to generate payroll');
       }
     }
   );

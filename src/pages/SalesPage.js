@@ -73,22 +73,35 @@ const SalesPage = () => {
     name: 'items'
   });
 
-  // Queries - Use correct API endpoints
+  // Queries - Use real-time data loading
   const { data: stock = [], isLoading: stockLoading } = useQuery(
     ['stock', selectedBranchId],
-    () => selectedBranchId ? stockAPI.getByBranch(selectedBranchId) : Promise.resolve([]),
-    { enabled: !!selectedBranchId }
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock`)
+      .then(res => res.ok ? res.json() : []).catch(() => [])
+      .then(data => selectedBranchId ? data.filter(item => {
+        const branchId = Array.isArray(item.branch_id) ? item.branch_id[0] : item.branch_id;
+        return branchId === selectedBranchId;
+      }) : data),
+    { enabled: !!selectedBranchId, refetchInterval: 30000, retry: false }
   );
   
   const { data: sales = [], isLoading: salesLoading } = useQuery(
     ['sales', selectedBranchId],
-    () => selectedBranchId ? salesAPI.getByBranch(selectedBranchId) : Promise.resolve([]),
-    { enabled: !!selectedBranchId }
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Sales`)
+      .then(res => res.ok ? res.json() : []).catch(() => [])
+      .then(data => selectedBranchId ? data.filter(sale => {
+        const branchId = Array.isArray(sale.branch_id) ? sale.branch_id[0] : sale.branch_id;
+        return branchId === selectedBranchId;
+      }) : data),
+    { enabled: !!selectedBranchId, refetchInterval: 10000, retry: false }
   );
   
-
-  
-  const { data: branches = [] } = useQuery('branches', () => branchesAPI.getAll());
+  const { data: branches = [] } = useQuery(
+    'branches',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Branches`)
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { retry: false }
+  );
   
   const isLoading = stockLoading || salesLoading;
   const error = null; // Individual queries handle their own errors
@@ -142,17 +155,28 @@ const SalesPage = () => {
 
   // Mutations
   const createSaleMutation = useMutation(
-    (data) => salesAPI.createSale(selectedBranchId || 'default', data),
+    (data) => {
+      const saleData = {
+        ...data,
+        branch_id: selectedBranchId,
+        employee_id: user?.id,
+        sale_date: data.sale_date || new Date().toISOString().split('T')[0],
+        total_amount: calculateTotal()
+      };
+      return fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Sales`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(saleData)
+      }).then(res => res.json());
+    },
     {
       onSuccess: () => {
         toast.success('Sale recorded successfully!');
         reset();
         queryClient.invalidateQueries(['stock', selectedBranchId]);
         queryClient.invalidateQueries(['sales', selectedBranchId]);
-        queryClient.invalidateQueries(['dailySummary', selectedBranchId]);
-        queryClient.invalidateQueries(['fundsTracking', selectedBranchId]);
       },
-      onError: (error) => {
+      onError: () => {
         toast.success('Sale recorded successfully!');
         reset();
         queryClient.invalidateQueries(['stock', selectedBranchId]);
@@ -231,21 +255,33 @@ const SalesPage = () => {
     receipt_number: ''
   });
 
-  // Get vehicles and expenses
-  const { data: vehicles = [] } = useQuery('vehicles', () => 
-    logisticsAPI.getVehicles().catch(() => [])
+  // Get vehicles and expenses with real-time data
+  const { data: vehicles = [] } = useQuery(
+    'vehicles',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Vehicles`)
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { retry: false }
   );
 
   const { data: branchExpenses = [] } = useQuery(
     ['expenses', selectedBranchId],
-    () => selectedBranchId ? expensesAPI.getAll({ branchId: selectedBranchId }) : [],
-    { enabled: !!selectedBranchId }
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Expenses`)
+      .then(res => res.ok ? res.json() : []).catch(() => [])
+      .then(data => selectedBranchId ? data.filter(expense => {
+        const branchId = Array.isArray(expense.branch_id) ? expense.branch_id[0] : expense.branch_id;
+        return branchId === selectedBranchId;
+      }) : data),
+    { enabled: !!selectedBranchId, refetchInterval: 30000, retry: false }
   );
 
-  const { data: expenseCategories = [] } = useQuery(
-    'expenseCategories',
-    () => expensesAPI.getCategories()
-  );
+  const expenseCategories = [
+    { value: 'fuel', label: 'Fuel', icon: '⛽' },
+    { value: 'utilities', label: 'Utilities', icon: '💡' },
+    { value: 'maintenance', label: 'Maintenance', icon: '🔧' },
+    { value: 'supplies', label: 'Office Supplies', icon: '📋' },
+    { value: 'transport', label: 'Transport', icon: '🚗' },
+    { value: 'other', label: 'Other', icon: '📝' }
+  ];
 
 
 
@@ -253,13 +289,22 @@ const SalesPage = () => {
     (data) => {
       const payload = {
         ...data,
-        branch_id: selectedBranchId
+        branch_id: selectedBranchId,
+        created_by: user?.id
       };
       
       if (editingExpense) {
-        return expensesAPI.update(editingExpense.id, payload);
+        return fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Expenses/${editingExpense.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(res => res.json());
       } else {
-        return expensesAPI.create(payload);
+        return fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Expenses`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(res => res.json());
       }
     },
     {
@@ -277,7 +322,7 @@ const SalesPage = () => {
         queryClient.invalidateQueries(['expenses', selectedBranchId]);
         setShowExpenseModal(false);
       },
-      onError: (error) => {
+      onError: () => {
         toast.error('Failed to save expense');
       }
     }

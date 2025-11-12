@@ -8,7 +8,15 @@ import {
   MenuItem,
   Box,
   IconButton,
-  Avatar
+  Avatar,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  useMediaQuery,
+  useTheme,
+  Divider
 } from '@mui/material';
 import {
   AccountCircle,
@@ -21,7 +29,8 @@ import {
   People,
   Business,
   AccountBalance,
-  Receipt
+  Receipt,
+  Menu as MenuIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,10 +40,13 @@ import { branchesAPI } from '../services/api';
 const Navbar = ({ openExternalPortal }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [anchorEl, setAnchorEl] = useState(null);
   const [salesMenuAnchor, setSalesMenuAnchor] = useState(null);
   const [stockMenuAnchor, setStockMenuAnchor] = useState(null);
   const [kraMenuAnchor, setKraMenuAnchor] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const { data: branches = [] } = useQuery('branches', branchesAPI.getAll, {
     enabled: !!user
@@ -49,6 +61,7 @@ const Navbar = ({ openExternalPortal }) => {
     setSalesMenuAnchor(null);
     setStockMenuAnchor(null);
     setKraMenuAnchor(null);
+    setMobileMenuOpen(false);
   };
 
   const handleLogout = () => {
@@ -93,14 +106,26 @@ const Navbar = ({ openExternalPortal }) => {
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {/* Dashboard */}
-          <Button
-            color="inherit"
-            startIcon={<Dashboard />}
-            onClick={() => navigate('/dashboard')}
-          >
-            Dashboard
-          </Button>
+          {isMobile && (
+            <IconButton
+              color="inherit"
+              onClick={() => setMobileMenuOpen(true)}
+              sx={{ mr: 1 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+
+          {!isMobile && (
+            <>
+              {/* Dashboard */}
+              <Button
+                color="inherit"
+                startIcon={<Dashboard />}
+                onClick={() => navigate('/dashboard')}
+              >
+                Dashboard
+              </Button>
 
           {/* HR */}
           {canAccessHR && (
@@ -272,6 +297,8 @@ const Navbar = ({ openExternalPortal }) => {
             <MenuItem onClick={() => handleKraService('https://itax.kra.go.ke/KRA-Portal/payTax.htm', 'Pay Tax')}>Pay Tax</MenuItem>
             <MenuItem onClick={() => handleKraService('https://itax.kra.go.ke/KRA-Portal/ledger.htm', 'Tax Ledger')}>Tax Ledger</MenuItem>
           </Menu>
+            </>
+          )}
 
           {/* Profile Menu */}
           <IconButton
@@ -303,6 +330,82 @@ const Navbar = ({ openExternalPortal }) => {
             </MenuItem>
           </Menu>
         </Box>
+
+        {/* Mobile Drawer */}
+        <Drawer
+          anchor="left"
+          open={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+        >
+          <Box sx={{ width: 250, pt: 2 }}>
+            <Typography variant="h6" sx={{ px: 2, mb: 2, color: 'orange', fontWeight: 'bold' }}>
+              kabisakabisa enterprise
+            </Typography>
+            <Divider />
+            <List>
+              <ListItem button onClick={() => { navigate('/dashboard'); setMobileMenuOpen(false); }}>
+                <ListItemIcon><Dashboard /></ListItemIcon>
+                <ListItemText primary="Dashboard" />
+              </ListItem>
+              
+              {canAccessHR && (
+                <ListItem button onClick={() => { navigate('/hr'); setMobileMenuOpen(false); }}>
+                  <ListItemIcon><People /></ListItemIcon>
+                  <ListItemText primary="HR" />
+                </ListItem>
+              )}
+              
+              {canAccessManager && (
+                <ListItem button onClick={() => { navigate('/manager'); setMobileMenuOpen(false); }}>
+                  <ListItemIcon><Business /></ListItemIcon>
+                  <ListItemText primary="Manager" />
+                </ListItem>
+              )}
+              
+              {canAccessAdmin && (
+                <ListItem button onClick={() => { navigate('/admin'); setMobileMenuOpen(false); }}>
+                  <ListItemIcon><Business /></ListItemIcon>
+                  <ListItemText primary="Admin" />
+                </ListItem>
+              )}
+              
+              {canAccessBoss && (
+                <ListItem button onClick={() => { navigate('/boss'); setMobileMenuOpen(false); }}>
+                  <ListItemIcon><Business /></ListItemIcon>
+                  <ListItemText primary="Boss" />
+                </ListItem>
+              )}
+              
+              {canAccessLogistics && (
+                <ListItem button onClick={() => { navigate('/logistics'); setMobileMenuOpen(false); }}>
+                  <ListItemIcon><LocalShipping /></ListItemIcon>
+                  <ListItemText primary="Logistics" />
+                </ListItem>
+              )}
+              
+              {canAccessOrders && (
+                <ListItem button onClick={() => { navigate('/orders'); setMobileMenuOpen(false); }}>
+                  <ListItemIcon><ShoppingCart /></ListItemIcon>
+                  <ListItemText primary="Orders" />
+                </ListItem>
+              )}
+              
+              {canAccessExpenses && (
+                <ListItem button onClick={() => { navigate('/expenses'); setMobileMenuOpen(false); }}>
+                  <ListItemIcon><Receipt /></ListItemIcon>
+                  <ListItemText primary="Expenses" />
+                </ListItem>
+              )}
+              
+              {canAccessFinance && (
+                <ListItem button onClick={() => { navigate('/finance'); setMobileMenuOpen(false); }}>
+                  <ListItemIcon><AccountBalance /></ListItemIcon>
+                  <ListItemText primary="Finance" />
+                </ListItem>
+              )}
+            </List>
+          </Box>
+        </Drawer>
       </Toolbar>
     </AppBar>
   );
