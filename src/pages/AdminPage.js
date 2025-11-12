@@ -34,7 +34,7 @@ import ReceiptCustomizer from '../components/ReceiptCustomizer';
 import ReportsGenerator from '../components/ReportsGenerator';
 import DocumentManager from '../components/DocumentManager';
 import HistoricalDataViewer from '../components/HistoricalDataViewer';
-import AdminFinanceSystem from '../components/AdminFinanceSystem';
+
 import { useForm } from 'react-hook-form';
 import { hrAPI, branchesAPI, stockAPI } from '../services/api';
 import { formatCurrency } from '../theme';
@@ -849,7 +849,16 @@ const AdminPage = () => {
       )}
 
       {activeTab === 9 && (
-        <AdminFinanceSystem />
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Finance System
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Finance system integration coming soon...
+            </Typography>
+          </CardContent>
+        </Card>
       )}
 
 
