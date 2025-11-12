@@ -98,12 +98,7 @@ const XeroFinancePage = () => {
     { refetchInterval: 30000, retry: false }
   );
 
-  const { data: payroll = [] } = useQuery(
-    'xero-payroll',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Payroll`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
-    { refetchInterval: 30000, retry: false }
-  );
+
 
   const { data: invoices = [] } = useQuery(
     'xero-invoices',
@@ -112,12 +107,7 @@ const XeroFinancePage = () => {
     { refetchInterval: 30000, retry: false }
   );
 
-  const { data: invoiceItems = [] } = useQuery(
-    'xero-invoice-items',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Invoice_Items`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
-    { refetchInterval: 30000, retry: false }
-  );
+
 
   const { data: stock = [] } = useQuery(
     'xero-stock',
@@ -140,16 +130,19 @@ const XeroFinancePage = () => {
     { refetchInterval: 30000, retry: false }
   );
 
-  const { data: chartOfAccounts = [] } = useQuery(
-    'xero-chart-accounts',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Chart_of_Accounts`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
-    { refetchInterval: 30000, retry: false }
-  );
+
 
   // Financial calculations from real data
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
+
+  // Calculate logistics revenue from trips first
+  const logisticsRevenue = trips
+    .filter(trip => {
+      const tripDate = new Date(trip.trip_date || trip.created_at);
+      return tripDate.getMonth() === currentMonth && tripDate.getFullYear() === currentYear;
+    })
+    .reduce((sum, trip) => sum + (parseFloat(trip.amount_charged) || 0), 0);
 
   // Calculate total monthly revenue from all sources
   const salesRevenue = sales
@@ -193,18 +186,7 @@ const XeroFinancePage = () => {
     .filter(order => order.status !== 'completed' && order.status !== 'paid')
     .reduce((sum, order) => sum + ((parseFloat(order.total_amount) || 0) - (parseFloat(order.amount_paid) || 0)), 0);
 
-  // Calculate logistics revenue from trips
-  const logisticsRevenue = trips
-    .filter(trip => {
-      const tripDate = new Date(trip.trip_date || trip.created_at);
-      return tripDate.getMonth() === currentMonth && tripDate.getFullYear() === currentYear;
-    })
-    .reduce((sum, trip) => sum + (parseFloat(trip.amount_charged) || 0), 0);
 
-  // Calculate total inventory value
-  const inventoryValue = stock.reduce((sum, item) => 
-    sum + ((parseFloat(item.quantity_available) || 0) * (parseFloat(item.unit_price) || 0)), 0
-  );
 
   const cashFlow = monthlyRevenue - monthlyExpenses;
 
