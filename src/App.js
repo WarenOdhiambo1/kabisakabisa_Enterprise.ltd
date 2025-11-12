@@ -22,7 +22,7 @@ import ManagerPage from './pages/ManagerPage';
 import AdminPage from './pages/AdminPage';
 import DataManagementPage from './pages/DataManagementPage';
 import ExpensePage from './pages/ExpensePage';
-import FinancePage from './pages/FinancePage';
+import XeroFinancePage from './pages/XeroFinancePage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 
@@ -96,7 +96,7 @@ function AppContent() {
           } />
 
           <Route path="/logistics" element={
-            <ProtectedRoute allowedRoles={['logistics', 'manager', 'boss']}>
+            <ProtectedRoute allowedRoles={['logistics', 'admin', 'manager', 'boss']}>
               <LogisticsPage openExternalPortal={openExternalPortal} />
             </ProtectedRoute>
           } />
@@ -108,7 +108,7 @@ function AppContent() {
           } />
 
           <Route path="/hr" element={
-            <ProtectedRoute allowedRoles={['hr', 'boss']}>
+            <ProtectedRoute allowedRoles={['hr', 'admin', 'manager', 'boss']}>
               <HRPage />
             </ProtectedRoute>
           } />
@@ -145,7 +145,7 @@ function AppContent() {
 
           <Route path="/finance" element={
             <ProtectedRoute allowedRoles={['admin', 'boss', 'manager']}>
-              <FinancePage />
+              <XeroFinancePage />
             </ProtectedRoute>
           } />
 

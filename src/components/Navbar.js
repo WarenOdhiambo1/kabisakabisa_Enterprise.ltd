@@ -89,9 +89,9 @@ const Navbar = ({ openExternalPortal }) => {
 
   const canAccessSales = ['sales', 'admin', 'manager', 'boss'].includes(user?.role);
   const canAccessStock = ['admin', 'manager', 'boss'].includes(user?.role);
-  const canAccessLogistics = ['logistics', 'manager', 'boss'].includes(user?.role);
+  const canAccessLogistics = ['logistics', 'admin', 'manager', 'boss'].includes(user?.role);
   const canAccessOrders = ['admin', 'manager', 'boss'].includes(user?.role);
-  const canAccessHR = ['hr', 'manager', 'boss'].includes(user?.role);
+  const canAccessHR = ['hr', 'admin', 'manager', 'boss'].includes(user?.role);
   const canAccessExpenses = ['admin', 'boss', 'manager', 'sales'].includes(user?.role);
   const canAccessFinance = ['admin', 'boss', 'manager'].includes(user?.role);
   const canAccessBoss = user?.role === 'boss';

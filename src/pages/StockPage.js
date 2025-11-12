@@ -49,7 +49,7 @@ const StockPage = () => {
   const { register, handleSubmit, reset, setValue } = useForm();
   const { register: registerTransfer, handleSubmit: handleTransferSubmit, reset: resetTransfer } = useForm();
 
-  // Queries - Use real-time data loading
+  // Queries - Fetch from both Stock and Stock_Movements tables
   const { data: stock = [], isLoading: stockLoading } = useQuery(
     ['stock', branchId],
     () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock`)
@@ -61,13 +61,20 @@ const StockPage = () => {
     { enabled: !!branchId, refetchInterval: 30000, retry: false }
   );
 
-  const { data: pendingTransfers = [], isLoading: transfersLoading } = useQuery(
-    ['transfers', branchId],
+  const { data: stockMovements = [], isLoading: movementsLoading } = useQuery(
+    ['stockMovements', branchId],
     () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock_Movements`)
       .then(res => res.ok ? res.json() : []).catch(() => [])
-      .then(data => data.filter(transfer => transfer.status === 'pending')),
-    { refetchInterval: 30000, retry: false }
+      .then(data => branchId ? data.filter(movement => {
+        const fromBranchId = Array.isArray(movement.from_branch_id) ? movement.from_branch_id[0] : movement.from_branch_id;
+        const toBranchId = Array.isArray(movement.to_branch_id) ? movement.to_branch_id[0] : movement.to_branch_id;
+        return fromBranchId === branchId || toBranchId === branchId;
+      }) : data),
+    { enabled: !!branchId, refetchInterval: 30000, retry: false }
   );
+
+  // Filter pending transfers from stock movements
+  const pendingTransfers = stockMovements.filter(transfer => transfer.status === 'pending');
 
   const { data: branches = [] } = useQuery(
     'branches',
@@ -76,7 +83,7 @@ const StockPage = () => {
     { retry: false }
   );
 
-  const isLoading = stockLoading || transfersLoading;
+  const isLoading = stockLoading || movementsLoading;
   const error = null;
 
   // Mutations
@@ -214,10 +221,7 @@ const StockPage = () => {
       toast.error('Product name is required');
       return;
     }
-    if (!data.unit_price || data.unit_price <= 0) {
-      toast.error('Valid unit price is required');
-      return;
-    }
+    // Unit price validation removed - handled internally
     if (data.quantity_available === undefined || data.quantity_available < 0) {
       toast.error('Valid quantity is required');
       return;
@@ -227,7 +231,7 @@ const StockPage = () => {
       product_name: data.product_name.trim(),
       product_id: data.product_id?.trim() || `PRD_${Date.now()}`,
       quantity_available: parseInt(data.quantity_available) || 0,
-      unit_price: parseFloat(data.unit_price),
+      unit_price: parseFloat(data.unit_price) || 1, // Default to 1 if not provided
       reorder_level: parseInt(data.reorder_level) || 10
     };
 
@@ -288,7 +292,7 @@ const StockPage = () => {
   };
 
   const lowStockItems = stock.filter(item => item.quantity_available <= item.reorder_level);
-  const totalStockValue = stock.reduce((total, item) => total + (item.quantity_available * item.unit_price), 0);
+  const totalStockValue = stock.reduce((total, item) => total + (item.quantity_available * (item.unit_price || 0)), 0);
 
   if (isLoading) {
     return (
@@ -307,7 +311,7 @@ const StockPage = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ mt: { xs: 2, md: 4 }, mb: { xs: 2, md: 4 }, px: { xs: 1, sm: 2 } }}>
+    <Container maxWidth="xl" sx={{ mt: { xs: 1, md: 4 }, mb: { xs: 1, md: 4 }, px: { xs: 0.5, sm: 1, md: 2 } }}>
       <Typography variant="h4" gutterBottom>
         Stock Management
       </Typography>
@@ -411,14 +415,13 @@ const StockPage = () => {
             <Typography variant="h6" gutterBottom>
               Current Stock
             </Typography>
-            <TableContainer component={Paper}>
-              <Table size="small">
+            <TableContainer component={Paper} sx={{ overflowX: 'auto', '& .MuiTable-root': { minWidth: 650 } }}>
+              <Table size="small" sx={{ '& .MuiTableCell-root': { border: '1px solid rgba(224, 224, 224, 1)' } }}>
                 <TableHead>
                   <TableRow>
                     <TableCell>Product ID</TableCell>
                     <TableCell>Product Name</TableCell>
                     <TableCell>Available</TableCell>
-                    <TableCell>Unit Price</TableCell>
                     <TableCell>Total Value</TableCell>
                     <TableCell>Reorder Level</TableCell>
                     <TableCell>Status</TableCell>
@@ -437,8 +440,7 @@ const StockPage = () => {
                           size="small"
                         />
                       </TableCell>
-                      <TableCell>{formatCurrency(item.unit_price)}</TableCell>
-                      <TableCell>{formatCurrency(item.quantity_available * item.unit_price)}</TableCell>
+                      <TableCell>{item.unit_price ? formatCurrency(item.quantity_available * item.unit_price) : 'N/A'}</TableCell>
                       <TableCell>{item.reorder_level}</TableCell>
                       <TableCell>
                         <Chip 
@@ -475,8 +477,8 @@ const StockPage = () => {
             <Typography variant="h6" gutterBottom>
               Low Stock Alerts
             </Typography>
-            <TableContainer component={Paper}>
-              <Table size="small">
+            <TableContainer component={Paper} sx={{ overflowX: 'auto', '& .MuiTable-root': { minWidth: 400 } }}>
+              <Table size="small" sx={{ '& .MuiTableCell-root': { border: '1px solid rgba(224, 224, 224, 1)' } }}>
                 <TableHead>
                   <TableRow>
                     <TableCell>Product Name</TableCell>
@@ -526,8 +528,8 @@ const StockPage = () => {
             <Typography variant="h6" gutterBottom>
               Pending Transfers
             </Typography>
-            <TableContainer component={Paper}>
-              <Table size="small">
+            <TableContainer component={Paper} sx={{ overflowX: 'auto', '& .MuiTable-root': { minWidth: 500 } }}>
+              <Table size="small" sx={{ '& .MuiTableCell-root': { border: '1px solid rgba(224, 224, 224, 1)' } }}>
                 <TableHead>
                   <TableRow>
                     <TableCell>Product</TableCell>
@@ -608,6 +610,7 @@ const StockPage = () => {
               step="0.01"
               margin="normal"
               {...register('unit_price', { required: true, min: 0 })}
+              sx={{ display: 'none' }}
             />
             <TextField
               fullWidth

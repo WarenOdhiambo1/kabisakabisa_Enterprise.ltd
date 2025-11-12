@@ -368,7 +368,7 @@ const ManagerPage = () => {
               <CardContent>
                 <Typography variant="h6" gutterBottom>Employee Management</Typography>
                 <Alert severity="success" sx={{ mb: 2 }}>
-                  Total Employees: {filterByBranch(employees).length} | Active: {filterByBranch(employees).filter(e => e.is_active).length}
+                  Total Employees: {filterByBranch(employees).length} | Active: {filterByBranch(employees).filter(e => e.is_active !== false).length} | Raw Data: {employees.length} employees loaded
                 </Alert>
                 <TableContainer component={Paper} sx={{ maxHeight: 400 }}>
                   <Table size="small" stickyHeader>
@@ -383,7 +383,7 @@ const ManagerPage = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {filterByBranch(employees).map((employee, index) => (
+                      {filterByBranch(employees).length > 0 ? filterByBranch(employees).map((employee, index) => (
                         <TableRow key={employee.id || index}>
                           <TableCell>{employee.full_name || 'N/A'}</TableCell>
                           <TableCell>
@@ -393,10 +393,18 @@ const ManagerPage = () => {
                           <TableCell>{employee.email || 'N/A'}</TableCell>
                           <TableCell align="right">{formatCurrency(employee.salary || 0)}</TableCell>
                           <TableCell>
-                            <Chip label={employee.is_active ? 'Active' : 'Inactive'} color={employee.is_active ? 'success' : 'default'} size="small" />
+                            <Chip label={employee.is_active !== false ? 'Active' : 'Inactive'} color={employee.is_active !== false ? 'success' : 'default'} size="small" />
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )) : (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center">
+                            <Typography color="text.secondary">
+                              {employees.length === 0 ? 'Loading employee data...' : 'No employees found for selected branch'}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -417,13 +425,21 @@ const ManagerPage = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {payroll.slice(0, 15).map((pay, index) => (
+                      {payroll.length > 0 ? payroll.slice(0, 15).map((pay, index) => (
                         <TableRow key={pay.id || index}>
                           <TableCell>{getEmployeeName(pay.employee_id)}</TableCell>
-                          <TableCell>{pay.pay_period || 'N/A'}</TableCell>
-                          <TableCell align="right">{formatCurrency(pay.gross_pay || 0)}</TableCell>
+                          <TableCell>{pay.pay_period || pay.period_start ? new Date(pay.period_start).toLocaleDateString() : 'N/A'}</TableCell>
+                          <TableCell align="right">{formatCurrency(pay.gross_pay || pay.gross_salary || 0)}</TableCell>
                         </TableRow>
-                      ))}
+                      )) : (
+                        <TableRow>
+                          <TableCell colSpan={3} align="center">
+                            <Typography color="text.secondary">
+                              No payroll records found
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </TableContainer>
