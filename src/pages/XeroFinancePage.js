@@ -139,12 +139,7 @@ const XeroFinancePage = () => {
     { refetchInterval: 30000, retry: false }
   );
 
-  const { data: bankAccounts = [] } = useQuery(
-    'finance-bank-accounts',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Bank_Accounts`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
-    { refetchInterval: 30000, retry: false }
-  );
+
 
 
 
