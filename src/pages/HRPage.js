@@ -228,6 +228,18 @@ const HRPage = () => {
       toast.error('Role is required');
       return;
     }
+    
+    // Password validation for new employees
+    if (!editingEmployee) {
+      if (!data.password?.trim()) {
+        toast.error('Password is required for new employees');
+        return;
+      }
+      if (data.password.trim().length < 8) {
+        toast.error('Password must be at least 8 characters long');
+        return;
+      }
+    }
 
     const cleanData = {
       full_name: data.full_name.trim(),
@@ -239,6 +251,17 @@ const HRPage = () => {
       hire_date: data.hire_date || new Date().toISOString().split('T')[0],
       is_active: data.is_active !== false
     };
+    
+    // Add password for new employees or password change for existing
+    if (!editingEmployee && data.password?.trim()) {
+      cleanData.password = data.password.trim();
+    } else if (editingEmployee && data.new_password?.trim()) {
+      if (data.new_password.trim().length < 8) {
+        toast.error('New password must be at least 8 characters long');
+        return;
+      }
+      cleanData.new_password = data.new_password.trim();
+    }
 
     if (editingEmployee) {
       updateEmployeeMutation.mutate({ id: editingEmployee.id, data: cleanData });
@@ -956,16 +979,43 @@ const HRPage = () => {
               InputLabelProps={{ shrink: true }}
               {...register('hire_date')}
             />
+            {editingEmployee && (
+              <>
+                <TextField
+                  fullWidth
+                  label="New Password (Optional)"
+                  type="password"
+                  margin="normal"
+                  helperText="Leave blank to keep current password. Minimum 8 characters if changing."
+                  {...register('new_password', { minLength: 8 })}
+                />
+                <Alert severity="info" sx={{ mt: 1, mb: 2 }}>
+                  <Typography variant="body2">
+                    Only fill the password field if you want to change the employee's password.
+                  </Typography>
+                </Alert>
+              </>
+            )}
             {!editingEmployee && (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                <Typography variant="body2">
-                  Default password will be: <strong>[role]pass123</strong>
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {branches.length === 0 && 'Note: No branches available for assignment. '}
-                  Driver accounts will have logistics role and can be viewed in Logistics page
-                </Typography>
-              </Alert>
+              <>
+                <TextField
+                  fullWidth
+                  label="Password *"
+                  type="password"
+                  margin="normal"
+                  helperText="Minimum 8 characters required"
+                  {...register('password', { required: true, minLength: 8 })}
+                />
+                <Alert severity="warning" sx={{ mt: 2 }}>
+                  <Typography variant="body2">
+                    <strong>Security Notice:</strong> Please set a secure password for the new employee.
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {branches.length === 0 && 'Note: No branches available for assignment. '}
+                    Driver accounts will have logistics role and can be viewed in Logistics page
+                  </Typography>
+                </Alert>
+              </>
             )}
           </Box>
         </DialogContent>

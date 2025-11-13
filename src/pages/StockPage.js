@@ -610,7 +610,6 @@ const StockPage = () => {
               step="0.01"
               margin="normal"
               {...register('unit_price', { required: true, min: 0 })}
-              sx={{ display: 'none' }}
             />
             <TextField
               fullWidth
