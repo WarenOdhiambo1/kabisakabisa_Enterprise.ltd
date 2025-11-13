@@ -110,24 +110,38 @@ const XeroFinancePage = () => {
   };
 
 
-  // Fetch all database tables for comprehensive financial data
+  // Fetch all financial tables from database
   const { data: sales = [], isLoading: salesLoading } = useQuery(
-    'xero-sales',
+    'finance-sales',
     () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Sales`)
       .then(res => res.ok ? res.json() : []).catch(() => []),
     { refetchInterval: 30000, retry: false }
   );
 
   const { data: expenses = [] } = useQuery(
-    'xero-expenses',
+    'finance-expenses',
     () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Expenses`)
       .then(res => res.ok ? res.json() : []).catch(() => []),
     { refetchInterval: 30000, retry: false }
   );
 
+  const { data: payroll = [] } = useQuery(
+    'finance-payroll',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Payroll`)
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { refetchInterval: 30000, retry: false }
+  );
+
   const { data: orders = [] } = useQuery(
-    'xero-orders',
+    'finance-orders',
     () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Orders`)
+      .then(res => res.ok ? res.json() : []).catch(() => []),
+    { refetchInterval: 30000, retry: false }
+  );
+
+  const { data: bankAccounts = [] } = useQuery(
+    'finance-bank-accounts',
+    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Bank_Accounts`)
       .then(res => res.ok ? res.json() : []).catch(() => []),
     { refetchInterval: 30000, retry: false }
   );
@@ -204,12 +218,22 @@ const XeroFinancePage = () => {
 
   const monthlyRevenue = salesRevenue + invoiceRevenue + logisticsRevenue;
 
-  const monthlyExpenses = expenses
+  // Calculate all expenses including payroll
+  const regularExpenses = expenses
     .filter(expense => {
       const expenseDate = new Date(expense.expense_date || expense.created_at);
       return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
     })
     .reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0);
+
+  const payrollExpenses = payroll
+    .filter(pay => {
+      const payDate = new Date(pay.pay_date || pay.created_at);
+      return payDate.getMonth() === currentMonth && payDate.getFullYear() === currentYear;
+    })
+    .reduce((sum, pay) => sum + (parseFloat(pay.net_pay) || 0), 0);
+
+  const monthlyExpenses = regularExpenses + payrollExpenses;
 
   const monthlyProfit = monthlyRevenue - monthlyExpenses;
 
@@ -236,8 +260,8 @@ const XeroFinancePage = () => {
 
   // Simple dashboard cards
   const DashboardCard = ({ title, amount, icon }) => (
-    <Card sx={{ height: '100%' }}>
-      <CardContent sx={{ p: 2 }}>
+    <Card sx={{ height: '100%', bgcolor: '#f9fafb' }}>
+      <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
           {icon}
           <Typography variant="body2" sx={{ ml: 1, fontSize: '14px', fontWeight: 600 }}>
@@ -252,15 +276,15 @@ const XeroFinancePage = () => {
   );
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 2, mb: 2, px: 1 }}>
+    <Container maxWidth="lg" sx={{ mt: { xs: 1, sm: 2 }, mb: 2, px: { xs: 2, sm: 1 } }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 600, fontSize: '20px' }}>
-            Finance - Logistics
+            Financial Management
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: '14px' }}>
-            Logistics financial overview
+            Complete business financial overview
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -291,8 +315,8 @@ const XeroFinancePage = () => {
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={6} sm={6} md={3}>
               <DashboardCard
-                title="Logistics Revenue"
-                amount={logisticsRevenue}
+                title="Total Revenue"
+                amount={monthlyRevenue}
                 icon={<MonetizationOn sx={{ fontSize: 20 }} />}
               />
             </Grid>
@@ -325,22 +349,46 @@ const XeroFinancePage = () => {
               <Card>
                 <CardContent sx={{ p: 2 }}>
                   <Typography variant="body1" sx={{ fontSize: '16px', fontWeight: 600, mb: 2 }}>
-                    Logistics Performance
+                    Financial Breakdown
                   </Typography>
                   <Grid container spacing={2}>
-                    <Grid item xs={6}>
+                    <Grid item xs={4}>
                       <Box sx={{ p: 1.5, bgcolor: '#f9fafb', borderRadius: 1, mb: 1 }}>
-                        <Typography variant="body2" sx={{ fontSize: '12px' }}>Trips Revenue</Typography>
+                        <Typography variant="body2" sx={{ fontSize: '12px' }}>Sales</Typography>
+                        <Typography variant="h6" sx={{ fontSize: '16px', fontWeight: 600 }}>
+                          {formatCurrency(salesRevenue)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Box sx={{ p: 1.5, bgcolor: '#f9fafb', borderRadius: 1, mb: 1 }}>
+                        <Typography variant="body2" sx={{ fontSize: '12px' }}>Logistics</Typography>
                         <Typography variant="h6" sx={{ fontSize: '16px', fontWeight: 600 }}>
                           {formatCurrency(logisticsRevenue)}
                         </Typography>
                       </Box>
                     </Grid>
+                    <Grid item xs={4}>
+                      <Box sx={{ p: 1.5, bgcolor: '#f9fafb', borderRadius: 1, mb: 1 }}>
+                        <Typography variant="body2" sx={{ fontSize: '12px' }}>Invoices</Typography>
+                        <Typography variant="h6" sx={{ fontSize: '16px', fontWeight: 600 }}>
+                          {formatCurrency(invoiceRevenue)}
+                        </Typography>
+                      </Box>
+                    </Grid>
                     <Grid item xs={6}>
                       <Box sx={{ p: 1.5, bgcolor: '#f9fafb', borderRadius: 1, mb: 1 }}>
-                        <Typography variant="body2" sx={{ fontSize: '12px' }}>Total Expenses</Typography>
+                        <Typography variant="body2" sx={{ fontSize: '12px' }}>Expenses</Typography>
                         <Typography variant="h6" sx={{ fontSize: '16px', fontWeight: 600 }}>
-                          {formatCurrency(monthlyExpenses)}
+                          {formatCurrency(regularExpenses)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Box sx={{ p: 1.5, bgcolor: '#f9fafb', borderRadius: 1, mb: 1 }}>
+                        <Typography variant="body2" sx={{ fontSize: '12px' }}>Payroll</Typography>
+                        <Typography variant="h6" sx={{ fontSize: '16px', fontWeight: 600 }}>
+                          {formatCurrency(payrollExpenses)}
                         </Typography>
                       </Box>
                     </Grid>
@@ -374,8 +422,8 @@ const XeroFinancePage = () => {
           {/* Outstanding Amounts */}
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent sx={{ p: 2 }}>
+              <Card sx={{ bgcolor: '#f9fafb' }}>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
                   <Typography variant="body1" sx={{ fontSize: '14px', fontWeight: 600, mb: 1 }}>
                     Receivables
                   </Typography>
@@ -389,8 +437,8 @@ const XeroFinancePage = () => {
               </Card>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent sx={{ p: 2 }}>
+              <Card sx={{ bgcolor: '#f9fafb' }}>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
                   <Typography variant="body1" sx={{ fontSize: '14px', fontWeight: 600, mb: 1 }}>
                     Payables
                   </Typography>

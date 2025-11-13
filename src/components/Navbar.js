@@ -99,7 +99,7 @@ const Navbar = ({ openExternalPortal }) => {
   const canAccessAdmin = user?.role === 'admin';
 
   return (
-    <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+    <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: 'white', color: 'black', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: 'orange', fontWeight: 'bold' }}>
           kabisakabisa enterprise
