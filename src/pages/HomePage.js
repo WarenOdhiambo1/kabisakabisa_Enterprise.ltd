@@ -8,8 +8,6 @@ import {
   CardContent,
   Button,
   IconButton,
-  Menu,
-  MenuItem,
   Collapse
 } from '@mui/material';
 import {
@@ -23,7 +21,6 @@ import { branchesAPI } from '../services/api';
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const [storeAnchor, setStoreAnchor] = useState(null);
   const [showBranches, setShowBranches] = useState(false);
   const { data: branches = [] } = useQuery('publicBranches', branchesAPI.getPublic);
 
