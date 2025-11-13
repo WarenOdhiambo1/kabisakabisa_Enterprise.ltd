@@ -89,15 +89,13 @@ const StockPage = () => {
   // Mutations
   const addStockMutation = useMutation(
     (data) => {
-      const stockData = {
-        ...data,
-        branch_id: branchId,
-        last_updated: new Date().toISOString()
-      };
-      return fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock`, {
+      return fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/stock/branch/${branchId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(stockData)
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        },
+        body: JSON.stringify(data)
       }).then(res => res.json());
     },
     {
@@ -221,17 +219,20 @@ const StockPage = () => {
       toast.error('Product name is required');
       return;
     }
-    // Unit price validation removed - handled internally
-    if (data.quantity_available === undefined || data.quantity_available < 0) {
+    if (!data.quantity_available || data.quantity_available < 0) {
       toast.error('Valid quantity is required');
+      return;
+    }
+    if (!data.unit_price || data.unit_price <= 0) {
+      toast.error('Unit price is required and must be greater than 0');
       return;
     }
 
     const cleanData = {
       product_name: data.product_name.trim(),
-      product_id: data.product_id?.trim() || `PRD_${Date.now()}`,
-      quantity_available: parseInt(data.quantity_available) || 0,
-      unit_price: parseFloat(data.unit_price) || 1, // Default to 1 if not provided
+      product_id: data.product_id?.trim(),
+      quantity_available: parseInt(data.quantity_available),
+      unit_price: parseFloat(data.unit_price),
       reorder_level: parseInt(data.reorder_level) || 10
     };
 
