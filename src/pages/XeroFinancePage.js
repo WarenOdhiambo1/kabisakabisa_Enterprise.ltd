@@ -141,12 +141,7 @@ const XeroFinancePage = () => {
     { refetchInterval: 30000, retry: false }
   );
 
-  const { data: branches = [] } = useQuery(
-    'xero-branches',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Branches`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
-    { retry: false }
-  );
+
 
   const { data: employees = [] } = useQuery(
     'xero-employees',
@@ -226,7 +221,6 @@ const XeroFinancePage = () => {
     .reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0);
 
   const monthlyProfit = monthlyRevenue - monthlyExpenses;
-  const profitMargin = monthlyRevenue > 0 ? (monthlyProfit / monthlyRevenue) * 100 : 0;
 
   // Calculate receivables from both sales and invoices
   const salesReceivables = sales
