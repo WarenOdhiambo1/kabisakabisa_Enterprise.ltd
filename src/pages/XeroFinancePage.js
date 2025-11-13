@@ -241,7 +241,7 @@ const XeroFinancePage = () => {
             Comprehensive business financial overview
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: { xs: 1, sm: 2 }, flexWrap: 'wrap' }}>
           <Button variant="contained" startIcon={<Add />}>
             New Transaction
           </Button>
@@ -279,7 +279,7 @@ const XeroFinancePage = () => {
       {activeTab === 0 && (
         <Box>
           {/* Key Metrics Cards */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid container spacing={{ xs: 1, sm: 2, md: 3 }} sx={{ mb: 4 }}>
             <Grid item xs={12} sm={6} md={3}>
               <DashboardCard
                 title="Revenue"

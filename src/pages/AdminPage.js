@@ -26,14 +26,10 @@ import {
   Tab,
   Grid
 } from '@mui/material';
-import { Add, Edit, Delete, Business, Inventory, History } from '@mui/icons-material';
+import { Add, Edit, Delete, Business, Inventory } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useAuth } from '../contexts/AuthContext';
-import AccountingIntegration from '../components/AccountingIntegration';
-import ReceiptCustomizer from '../components/ReceiptCustomizer';
-import ReportsGenerator from '../components/ReportsGenerator';
-import DocumentManager from '../components/DocumentManager';
-import HistoricalDataViewer from '../components/HistoricalDataViewer';
+
 
 import { useForm } from 'react-hook-form';
 import { hrAPI, branchesAPI, stockAPI } from '../services/api';
@@ -66,7 +62,7 @@ const AdminPage = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [editingBranch, setEditingBranch] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [showHistoricalData, setShowHistoricalData] = useState(false);
+
 
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
@@ -436,7 +432,7 @@ const AdminPage = () => {
               <Button
                 fullWidth
                 variant="contained"
-                onClick={() => window.location.href = '/hr'}
+                onClick={() => window.open('/hr', '_blank')}
                 sx={{ bgcolor: '#4caf50', '&:hover': { bgcolor: '#45a049' } }}
               >
                 HR Management
@@ -494,16 +490,7 @@ const AdminPage = () => {
                 Data Management
               </Button>
             </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={() => setShowHistoricalData(true)}
-                sx={{ color: '#795548', borderColor: '#795548' }}
-              >
-                Historical Data
-              </Button>
-            </Grid>
+
           </Grid>
         </CardContent>
       </Card>
@@ -579,13 +566,7 @@ const AdminPage = () => {
           <Tab label="Users" />
           <Tab label="Branches" />
           <Tab label="Products" />
-          <Tab label="Sales Analytics" />
-          <Tab label="Accounting" />
-          <Tab label="Receipts" />
-          <Tab label="Reports" />
-          <Tab label="Documents" />
-          <Tab label="Historical Data" />
-          <Tab label="Finance System" />
+
         </Tabs>
       </Box>
 
@@ -742,118 +723,7 @@ const AdminPage = () => {
         </Card>
       )}
 
-      {activeTab === 3 && (
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Sales Analytics & Stock Movements
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Track daily sales quantities and stock reductions per product
-            </Typography>
-            
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Product</TableCell>
-                  <TableCell>Quantity Sold</TableCell>
-                  <TableCell>Unit Price</TableCell>
-                  <TableCell>Subtotal</TableCell>
-                  <TableCell>Sale ID</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {salesAnalytics.length > 0 ? salesAnalytics.slice(0, 20).map((sale, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{new Date(sale.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell>{sale.product_name}</TableCell>
-                    <TableCell>{sale.quantity_sold}</TableCell>
-                    <TableCell>{formatCurrency(sale.unit_price)}</TableCell>
-                    <TableCell>{formatCurrency(sale.subtotal)}</TableCell>
-                    <TableCell>{sale.sale_id}</TableCell>
-                  </TableRow>
-                )) : (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center">
-                      <Typography color="text.secondary">
-                        No sales data available
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-            
-            {stockMovements.length > 0 && (
-              <Box sx={{ mt: 4 }}>
-                <Typography variant="h6" gutterBottom>
-                  Recent Stock Movements
-                </Typography>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Product</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell>Quantity</TableCell>
-                      <TableCell>From Branch</TableCell>
-                      <TableCell>To Branch</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {stockMovements.slice(0, 10).map((movement, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{new Date(movement.movement_date).toLocaleDateString()}</TableCell>
-                        <TableCell>{movement.product_name}</TableCell>
-                        <TableCell>
-                          <Chip label={movement.movement_type} size="small" />
-                        </TableCell>
-                        <TableCell>{movement.quantity}</TableCell>
-                        <TableCell>{movement.from_branch_name || 'N/A'}</TableCell>
-                        <TableCell>{movement.to_branch_name || 'N/A'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Box>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
-      {activeTab === 4 && <AccountingIntegration />}
-      {activeTab === 5 && <ReceiptCustomizer />}
-      {activeTab === 6 && <ReportsGenerator />}
-      {activeTab === 7 && <DocumentManager />}
-
-      {activeTab === 8 && (
-        <Box>
-          <Typography variant="h6" gutterBottom>
-            Historical Data Management
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<History />}
-            onClick={() => setShowHistoricalData(true)}
-          >
-            Open Historical Data
-          </Button>
-        </Box>
-      )}
-
-      {activeTab === 9 && (
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Finance System
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Finance system integration coming soon...
-            </Typography>
-          </CardContent>
-        </Card>
-      )}
 
 
 
@@ -915,9 +785,9 @@ const AdminPage = () => {
                 required={!editingUser}
               />
             )}
-            {user?.role === 'hr' && !editingUser && (
+            {(['hr', 'admin', 'boss'].includes(user?.role)) && !editingUser && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1, p: 1, bgcolor: 'info.light', borderRadius: 1 }}>
-                ℹ️ HR can create employee records. Admin will set the password later.
+                ℹ️ {user?.role === 'admin' || user?.role === 'boss' ? 'Admin can create users with passwords.' : 'HR can create employee records. Admin will set the password later.'}
               </Typography>
             )}
             <TextField
@@ -1042,11 +912,7 @@ const AdminPage = () => {
         </DialogActions>
       </Dialog>
 
-      <HistoricalDataViewer 
-        open={showHistoricalData}
-        onClose={() => setShowHistoricalData(false)}
-        title="Historical Business Data"
-      />
+
     </Container>
   );
 };
