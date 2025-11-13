@@ -14,7 +14,6 @@ import {
   Collapse
 } from '@mui/material';
 import {
-  Store,
   Phone,
   Email,
   LocationOn,
@@ -125,9 +124,9 @@ const HomePage = () => {
             <Typography variant="h4" sx={{ color: '#2c5530', fontWeight: 600, mb: 3, textAlign: 'center' }}>
               Our Store Locations
             </Typography>
-            <Grid container spacing={3}>
+            <Grid container spacing={3} justifyContent={{ xs: 'center', sm: 'flex-start' }}>
               {branches.map((branch) => (
-                <Grid item xs={12} sm={6} md={4} key={branch.id}>
+                <Grid item xs={10} sm={6} md={4} key={branch.id}>
                   <Card sx={{ border: '1px solid #2c5530', '&:hover': { boxShadow: 3 } }}>
                     <CardContent>
                       <Typography variant="h6" sx={{ color: '#2c5530', mb: 1 }}>
