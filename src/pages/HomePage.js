@@ -15,7 +15,6 @@ import {
 import {
   Search,
   Phone,
-  Email,
   LocationOn
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -34,25 +33,25 @@ const HomePage = () => {
       <Box sx={{ borderBottom: '1px solid #e5e7eb', py: 3 }}>
         <Container maxWidth="xl" sx={{ px: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.025em' }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.025em', fontSize: { xs: '1.5rem', sm: '2rem' } }}>
               BSN CONSTRUCTION
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, sm: 6 } }}>
               <Button 
                 sx={{ 
                   color: 'black', 
-                  fontSize: '0.875rem', 
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
                   letterSpacing: '0.05em',
                   '&:hover': { opacity: 0.7 }
                 }}
-                onClick={(e) => setStoreAnchor(e.currentTarget)}
+                onClick={() => setShowBranches(!showBranches)}
               >
                 STORE
               </Button>
               <Button 
                 sx={{ 
                   color: 'black', 
-                  fontSize: '0.875rem', 
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
                   letterSpacing: '0.05em',
                   '&:hover': { opacity: 0.7 }
                 }}
@@ -61,54 +60,40 @@ const HomePage = () => {
               </Button>
               <IconButton 
                 sx={{ 
-                  p: 1.5, 
+                  p: { xs: 1, sm: 1.5 },
                   '&:hover': { bgcolor: '#f9fafb' },
                   borderRadius: 2
                 }}
                 onClick={() => navigate('/login')}
               >
-                <Search sx={{ fontSize: 20 }} />
+                <Search sx={{ fontSize: { xs: 18, sm: 20 } }} />
               </IconButton>
             </Box>
           </Box>
         </Container>
       </Box>
 
-      {/* Store Dropdown Menu */}
-      <Menu
-        anchorEl={storeAnchor}
-        open={Boolean(storeAnchor)}
-        onClose={() => setStoreAnchor(null)}
-      >
-        {branches.map((branch) => (
-          <MenuItem key={branch.id} onClick={() => {
-            setStoreAnchor(null);
-            setShowBranches(true);
-          }}>
-            {branch.name}
-          </MenuItem>
-        ))}
-      </Menu>
+
 
       {/* Hero Section */}
-      <Container maxWidth="xl" sx={{ px: 4, py: 10 }}>
-        <Grid container spacing={8} alignItems="center">
+      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 4 }, py: { xs: 6, sm: 10 } }}>
+        <Grid container spacing={{ xs: 4, sm: 8 }} alignItems="center">
           {/* Left Content */}
           <Grid item xs={12} lg={6}>
             <Box sx={{ mb: 4 }}>
               <Typography 
                 variant="h1" 
                 sx={{ 
-                  fontSize: { xs: '3rem', md: '4.5rem' },
+                  fontSize: { xs: '2.5rem', sm: '3rem', md: '4.5rem' },
                   fontWeight: 700,
                   lineHeight: 1.1,
                   letterSpacing: '-0.025em',
-                  mb: 4
+                  mb: { xs: 2, sm: 4 }
                 }}
               >
                 NEW TILES<br />COLLECTION
               </Typography>
-              <Typography variant="h5" sx={{ color: '#6b7280', mb: 4 }}>
+              <Typography variant="h5" sx={{ color: '#6b7280', mb: { xs: 2, sm: 4 }, fontSize: { xs: '1.2rem', sm: '1.5rem' } }}>
                 Dealers in tiles collection,
               </Typography>
               <Button
@@ -116,12 +101,12 @@ const HomePage = () => {
                 size="large"
                 onClick={() => navigate('/login')}
                 sx={{
-                  px: 4,
-                  py: 2,
+                  px: { xs: 3, sm: 4 },
+                  py: { xs: 1.5, sm: 2 },
                   border: '2px solid black',
                   borderRadius: '50px',
                   color: 'black',
-                  fontSize: '0.875rem',
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
                   letterSpacing: '0.05em',
                   '&:hover': {
                     bgcolor: 'black',
@@ -138,7 +123,7 @@ const HomePage = () => {
           {/* Right Images */}
           <Grid item xs={12} lg={6}>
             <Box sx={{ position: 'relative' }}>
-              <Grid container spacing={2}>
+              <Grid container spacing={{ xs: 1, sm: 2 }}>
                 {/* Top Left - Gray tile */}
                 <Grid item xs={6}>
                   <Box sx={{ 
@@ -251,22 +236,47 @@ const HomePage = () => {
             <Typography variant="h4" sx={{ fontWeight: 600, mb: 4, textAlign: 'center' }}>
               Our Store Locations
             </Typography>
-            <Grid container spacing={3} justifyContent={{ xs: 'center', sm: 'flex-start' }}>
+            <Grid container spacing={3} justifyContent="center">
               {branches.map((branch) => (
-                <Grid item xs={10} sm={6} md={4} key={branch.id}>
+                <Grid item xs={11} sm={8} md={6} lg={4} key={branch.id}>
                   <Card sx={{ border: '1px solid #e5e7eb', '&:hover': { boxShadow: 2 } }}>
-                    <CardContent>
-                      <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                         {branch.name}
                       </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <LocationOn sx={{ color: '#6b7280', mr: 1, fontSize: 18 }} />
-                        <Typography variant="body2" color="text.secondary">{branch.address}</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2, justifyContent: 'center' }}>
+                        <LocationOn sx={{ color: '#6b7280', mr: 1, fontSize: 18, mt: 0.5 }} />
+                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'left' }}>
+                          {branch.address}
+                        </Typography>
                       </Box>
                       {branch.phone && (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'center' }}>
                           <Phone sx={{ color: '#6b7280', mr: 1, fontSize: 18 }} />
                           <Typography variant="body2" color="text.secondary">{branch.phone}</Typography>
+                        </Box>
+                      )}
+                      {branch.email && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'center' }}>
+                          <Typography variant="body2" color="text.secondary">✉️ {branch.email}</Typography>
+                        </Box>
+                      )}
+                      {branch.manager && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'center' }}>
+                          <Typography variant="body2" color="text.secondary">👤 {branch.manager}</Typography>
+                        </Box>
+                      )}
+                      {branch.status && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="caption" sx={{ 
+                            px: 2, 
+                            py: 0.5, 
+                            borderRadius: 1, 
+                            bgcolor: branch.status === 'active' ? '#e8f5e9' : '#fff3e0',
+                            color: branch.status === 'active' ? '#2e7d32' : '#f57c00'
+                          }}>
+                            {branch.status}
+                          </Typography>
                         </Box>
                       )}
                     </CardContent>
