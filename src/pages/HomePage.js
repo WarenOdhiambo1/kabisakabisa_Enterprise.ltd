@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Container,
   Typography,
@@ -7,233 +7,253 @@ import {
   Card,
   CardContent,
   Button,
-  Paper
+  AppBar,
+  Toolbar,
+  Menu,
+  MenuItem,
+  Collapse
 } from '@mui/material';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import {
+  Store,
+  Phone,
+  Email,
+  LocationOn,
+  Construction,
+  ExpandMore
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { branchesAPI } from '../services/api';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-
-// Fix for default markers in react-leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-  iconUrl: require('leaflet/dist/images/marker-icon.png'),
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
-});
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { data: branches = [], isLoading } = useQuery(
-    'publicBranches',
-    branchesAPI.getPublic
-  );
-
-  const handleLoginClick = () => {
-    navigate('/login');
-  };
+  const [storeAnchor, setStoreAnchor] = useState(null);
+  const [showBranches, setShowBranches] = useState(false);
+  const { data: branches = [] } = useQuery('publicBranches', branchesAPI.getPublic);
 
   return (
-    <Box>
+    <Box sx={{ bgcolor: '#f5f5f5' }}>
+      {/* Navigation Bar */}
+      <AppBar position="static" sx={{ bgcolor: '#2c5530', boxShadow: 'none' }}>
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
+            BSN CONSTRUCTION
+          </Typography>
+          <Button color="inherit" sx={{ mx: 1 }}>HOME</Button>
+          <Button 
+            color="inherit" 
+            sx={{ mx: 1 }}
+            onClick={(e) => setStoreAnchor(e.currentTarget)}
+            endIcon={<ExpandMore />}
+          >
+            STORE
+          </Button>
+          <Button color="inherit" sx={{ mx: 1 }}>ABOUT US</Button>
+          <Button color="inherit" sx={{ mx: 1 }}>CONTACT</Button>
+          <Button 
+            variant="outlined" 
+            sx={{ ml: 2, borderColor: 'white', color: 'white' }}
+            onClick={() => navigate('/login')}
+          >
+            LOGIN
+          </Button>
+        </Toolbar>
+      </AppBar>
+
+      {/* Store Dropdown Menu */}
+      <Menu
+        anchorEl={storeAnchor}
+        open={Boolean(storeAnchor)}
+        onClose={() => setStoreAnchor(null)}
+      >
+        {branches.map((branch) => (
+          <MenuItem key={branch.id} onClick={() => {
+            setStoreAnchor(null);
+            setShowBranches(true);
+          }}>
+            {branch.name}
+          </MenuItem>
+        ))}
+      </Menu>
       {/* Hero Section */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-          color: 'white',
-          py: 8,
-          textAlign: 'center'
+          background: 'linear-gradient(rgba(44,85,48,0.8), rgba(44,85,48,0.8)), url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iYSIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiPjxyZWN0IGZpbGw9IiNmZmYiIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIi8+PHJlY3QgZmlsbD0iI2VlZSIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCBmaWxsPSJ1cmwoI2EpIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIi8+PC9zdmc+)',
+          minHeight: '70vh',
+          display: 'flex',
+          alignItems: 'center',
+          color: 'white'
         }}
       >
         <Container maxWidth="lg">
-          <Typography variant="h2" component="h1" gutterBottom>
-            BSN Business Manager
-          </Typography>
-          <Typography variant="h5" component="h2" gutterBottom>
-            Comprehensive Multi-Branch Business Management System
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}>
-            Streamline your retail and logistics operations across multiple branches 
-            with our secure, integrated management platform.
-          </Typography>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={handleLoginClick}
-            sx={{
-              bgcolor: 'white',
-              color: 'primary.main',
-              '&:hover': {
-                bgcolor: 'grey.100'
-              }
-            }}
-          >
-            Access System
-          </Button>
-        </Container>
-      </Box>
-
-      {/* Features Section */}
-      <Container maxWidth="lg" sx={{ py: 8 }}>
-        <Typography variant="h3" component="h2" textAlign="center" gutterBottom>
-          Key Features
-        </Typography>
-        <Grid container spacing={4} sx={{ mt: 2 }}>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h5" component="h3" gutterBottom>
-                  Sales Management
-                </Typography>
-                <Typography variant="body2">
-                  Real-time sales tracking, inventory management, and 
-                  automated stock updates across all branches.
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h5" component="h3" gutterBottom>
-                  Logistics Control
-                </Typography>
-                <Typography variant="body2">
-                  Vehicle fleet management, trip tracking, maintenance 
-                  scheduling, and cost analysis.
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h5" component="h3" gutterBottom>
-                  HR & Payroll
-                </Typography>
-                <Typography variant="body2">
-                  Employee management, automated payroll processing, 
-                  and secure payslip distribution.
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Container>
-
-      {/* Branch Locations Map */}
-      <Box sx={{ bgcolor: 'grey.50', py: 8 }}>
-        <Container maxWidth="lg">
-          <Typography variant="h3" component="h2" textAlign="center" gutterBottom>
-            Our Locations
-          </Typography>
-          
-          {!isLoading && branches.length > 0 && (
-            <Paper sx={{ height: 400, mt: 4 }}>
-              <MapContainer
-                center={[branches[0]?.latitude || 0, branches[0]?.longitude || 0]}
-                zoom={10}
-                style={{ height: '100%', width: '100%' }}
+          <Grid container spacing={4} alignItems="center">
+            <Grid item xs={12} md={6}>
+              <Typography variant="h2" sx={{ fontWeight: 700, mb: 2 }}>
+                Premium Floor Tiles
+              </Typography>
+              <Typography variant="h5" sx={{ mb: 3, color: '#e8f5e8' }}>
+                Construction Materials Specialist
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 4, fontSize: '1.1rem', lineHeight: 1.6 }}>
+                We deal with construction materials and specialize in premium floor tiles. 
+                Quality ceramic, porcelain, and natural stone tiles for your projects.
+              </Typography>
+              <Button
+                variant="contained"
+                size="large"
+                sx={{ bgcolor: '#ff6b35', '&:hover': { bgcolor: '#e55a2b' }, px: 4, py: 1.5 }}
               >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
-                {branches.map((branch) => (
-                  branch.latitude && branch.longitude && (
-                    <Marker
-                      key={branch.id}
-                      position={[branch.latitude, branch.longitude]}
-                    >
-                      <Popup>
-                        <div>
-                          <Typography variant="h6">{branch.name}</Typography>
-                          <Typography variant="body2">{branch.address}</Typography>
-                          {branch.phone && (
-                            <Typography variant="body2">
-                              Phone: {branch.phone}
-                            </Typography>
-                          )}
-                        </div>
-                      </Popup>
-                    </Marker>
-                  )
-                ))}
-              </MapContainer>
-            </Paper>
-          )}
-
-          {/* Branch Cards */}
-          <Grid container spacing={3} sx={{ mt: 4 }}>
-            {branches.map((branch) => (
-              <Grid item xs={12} sm={6} md={4} key={branch.id}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" component="h3" gutterBottom>
-                      {branch.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {branch.address}
-                    </Typography>
-                    {branch.phone && (
-                      <Typography variant="body2">
-                        📞 {branch.phone}
-                      </Typography>
-                    )}
-                    {branch.email && (
-                      <Typography variant="body2">
-                        ✉️ {branch.email}
-                      </Typography>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
+                View Products
+              </Button>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Construction sx={{ fontSize: 120, color: '#ff6b35', mb: 2 }} />
+                <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                  Quality Materials
+                </Typography>
+              </Box>
+            </Grid>
           </Grid>
         </Container>
       </Box>
 
-      {/* Management Team Section */}
-      <Container maxWidth="lg" sx={{ py: 8 }}>
-        <Typography variant="h3" component="h2" textAlign="center" gutterBottom>
-          Management Team
-        </Typography>
-        <Grid container spacing={4} sx={{ mt: 2 }}>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h5" component="h3" gutterBottom>
-                  Executive Leadership
-                </Typography>
-                <Typography variant="body2">
-                  Our experienced leadership team ensures strategic direction 
-                  and operational excellence across all business units.
-                </Typography>
-              </CardContent>
-            </Card>
+      {/* Store Branches Section */}
+      <Collapse in={showBranches}>
+        <Box sx={{ bgcolor: 'white', py: 4, borderTop: '3px solid #2c5530' }}>
+          <Container maxWidth="lg">
+            <Typography variant="h4" sx={{ color: '#2c5530', fontWeight: 600, mb: 3, textAlign: 'center' }}>
+              Our Store Locations
+            </Typography>
+            <Grid container spacing={3}>
+              {branches.map((branch) => (
+                <Grid item xs={12} sm={6} md={4} key={branch.id}>
+                  <Card sx={{ border: '1px solid #2c5530', '&:hover': { boxShadow: 3 } }}>
+                    <CardContent>
+                      <Typography variant="h6" sx={{ color: '#2c5530', mb: 1 }}>
+                        {branch.name}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <LocationOn sx={{ color: '#ff6b35', mr: 1, fontSize: 18 }} />
+                        <Typography variant="body2">{branch.address}</Typography>
+                      </Box>
+                      {branch.phone && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <Phone sx={{ color: '#ff6b35', mr: 1, fontSize: 18 }} />
+                          <Typography variant="body2">{branch.phone}</Typography>
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Container>
+        </Box>
+      </Collapse>
+
+      {/* About Us Section */}
+      <Box sx={{ bgcolor: 'white', py: 8 }}>
+        <Container maxWidth="lg">
+          <Grid container spacing={6} alignItems="center">
+            <Grid item xs={12} md={6}>
+              <Typography variant="h3" sx={{ color: '#2c5530', fontWeight: 600, mb: 3 }}>
+                About Us
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 3, fontSize: '1.1rem', lineHeight: 1.7 }}>
+                We deal with construction materials and specialize in floor tiles. Our company 
+                has been serving the construction industry with premium quality materials for 
+                over a decade.
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 3, fontSize: '1.1rem', lineHeight: 1.7 }}>
+                We specifically focus on floor tiles including ceramic, porcelain, marble, 
+                and natural stone tiles. Our extensive inventory ensures we meet all your 
+                construction and renovation needs.
+              </Typography>
+              <Button 
+                variant="contained" 
+                sx={{ bgcolor: '#ff6b35', '&:hover': { bgcolor: '#e55a2b' } }}
+              >
+                Learn More
+              </Button>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Card sx={{ p: 3, textAlign: 'center', bgcolor: '#f8f9fa' }}>
+                    <Typography variant="h4" sx={{ color: '#2c5530', fontWeight: 700 }}>10+</Typography>
+                    <Typography variant="body2">Years Experience</Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={6}>
+                  <Card sx={{ p: 3, textAlign: 'center', bgcolor: '#f8f9fa' }}>
+                    <Typography variant="h4" sx={{ color: '#ff6b35', fontWeight: 700 }}>500+</Typography>
+                    <Typography variant="body2">Happy Clients</Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={6}>
+                  <Card sx={{ p: 3, textAlign: 'center', bgcolor: '#f8f9fa' }}>
+                    <Typography variant="h4" sx={{ color: '#2c5530', fontWeight: 700 }}>50+</Typography>
+                    <Typography variant="body2">Tile Varieties</Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={6}>
+                  <Card sx={{ p: 3, textAlign: 'center', bgcolor: '#f8f9fa' }}>
+                    <Typography variant="h4" sx={{ color: '#ff6b35', fontWeight: 700 }}>24/7</Typography>
+                    <Typography variant="body2">Support</Typography>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Grid>
           </Grid>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="h5" component="h3" gutterBottom>
-                  Branch Managers
-                </Typography>
-                <Typography variant="body2">
-                  Dedicated branch managers oversee daily operations, 
-                  ensuring quality service and efficient management.
-                </Typography>
-              </CardContent>
-            </Card>
+        </Container>
+      </Box>
+
+
+
+      {/* Contact Section */}
+      <Box sx={{ bgcolor: '#2c5530', color: 'white', py: 6 }}>
+        <Container maxWidth="lg">
+          <Typography variant="h4" textAlign="center" gutterBottom sx={{ fontWeight: 600 }}>
+            Contact Us
+          </Typography>
+          <Grid container spacing={4} sx={{ mt: 2 }}>
+            <Grid item xs={12} md={4}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Phone sx={{ fontSize: 40, mb: 2 }} />
+                <Typography variant="h6">Call Us</Typography>
+                <Typography>+254 700 000 000</Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Email sx={{ fontSize: 40, mb: 2 }} />
+                <Typography variant="h6">Email</Typography>
+                <Typography>info@bsnconstruction.com</Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Box sx={{ textAlign: 'center' }}>
+                <LocationOn sx={{ fontSize: 40, mb: 2 }} />
+                <Typography variant="h6">Visit Us</Typography>
+                <Button 
+                  variant="outlined" 
+                  sx={{ borderColor: 'white', color: 'white', mt: 1 }}
+                  onClick={() => setShowBranches(true)}
+                >
+                  View Stores
+                </Button>
+              </Box>
+            </Grid>
           </Grid>
-        </Grid>
-      </Container>
+        </Container>
+      </Box>
 
       {/* Footer */}
-      <Box sx={{ bgcolor: 'primary.main', color: 'white', py: 4 }}>
+      <Box sx={{ bgcolor: '#1a1a1a', color: 'white', py: 4 }}>
         <Container maxWidth="lg">
           <Typography variant="body2" textAlign="center">
-            © 2024 BSN Business Manager. All rights reserved.
+            © 2024 BSN Construction Materials. All rights reserved.
           </Typography>
         </Container>
       </Box>

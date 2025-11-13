@@ -1,6 +1,34 @@
 import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#2c5530', // Dark Green
+      light: '#4a7c59', // Light Green
+      dark: '#1e3a21', // Darker Green
+      contrastText: '#FFFFFF'
+    },
+    secondary: {
+      main: '#ff6b35', // Orange
+      light: '#ff8a65', // Light Orange
+      dark: '#e64a19', // Dark Orange
+      contrastText: '#FFFFFF'
+    },
+    success: {
+      main: '#2c5530',
+      light: '#4a7c59',
+      dark: '#1e3a21'
+    },
+    warning: {
+      main: '#ff6b35',
+      light: '#ff8a65',
+      dark: '#e64a19'
+    },
+    background: {
+      default: '#f5f5f5',
+      paper: '#FFFFFF'
+    }
+  },
   typography: {
     fontFamily: '"Nunito", "Roboto", "Helvetica", "Arial", sans-serif',
     fontSize: 13,
