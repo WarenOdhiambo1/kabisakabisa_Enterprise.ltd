@@ -35,6 +35,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { formatCurrency } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
 import { useParams } from 'react-router-dom';
+import { stockAPI, salesAPI, branchesAPI, logisticsAPI, expensesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const SalesPage = () => {
@@ -73,33 +74,22 @@ const SalesPage = () => {
     name: 'items'
   });
 
-  // Queries - Use real-time data loading
+  // Queries - Use authenticated API services
   const { data: stock = [], isLoading: stockLoading } = useQuery(
     ['stock', selectedBranchId],
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock`)
-      .then(res => res.ok ? res.json() : []).catch(() => [])
-      .then(data => selectedBranchId ? data.filter(item => {
-        const branchId = Array.isArray(item.branch_id) ? item.branch_id[0] : item.branch_id;
-        return branchId === selectedBranchId;
-      }) : data),
+    () => stockAPI.getByBranch(selectedBranchId),
     { enabled: !!selectedBranchId, refetchInterval: 30000, retry: false }
   );
   
   const { data: sales = [], isLoading: salesLoading } = useQuery(
     ['sales', selectedBranchId],
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Sales`)
-      .then(res => res.ok ? res.json() : []).catch(() => [])
-      .then(data => selectedBranchId ? data.filter(sale => {
-        const branchId = Array.isArray(sale.branch_id) ? sale.branch_id[0] : sale.branch_id;
-        return branchId === selectedBranchId;
-      }) : data),
+    () => salesAPI.getByBranch(selectedBranchId),
     { enabled: !!selectedBranchId, refetchInterval: 10000, retry: false }
   );
   
   const { data: branches = [] } = useQuery(
     'branches',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Branches`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
+    () => branchesAPI.getAll(),
     { retry: false }
   );
   
@@ -158,16 +148,11 @@ const SalesPage = () => {
     (data) => {
       const saleData = {
         ...data,
-        branch_id: selectedBranchId,
         employee_id: user?.id,
         sale_date: data.sale_date || new Date().toISOString().split('T')[0],
         total_amount: calculateTotal()
       };
-      return fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Sales`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(saleData)
-      }).then(res => res.json());
+      return salesAPI.createSale(selectedBranchId, saleData);
     },
     {
       onSuccess: () => {
@@ -235,19 +220,13 @@ const SalesPage = () => {
   // Get vehicles and expenses with real-time data
   const { data: vehicles = [] } = useQuery(
     'vehicles',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Vehicles`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
+    () => logisticsAPI.getVehicles(),
     { retry: false }
   );
 
   const { data: branchExpenses = [] } = useQuery(
     ['expenses', selectedBranchId],
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Expenses`)
-      .then(res => res.ok ? res.json() : []).catch(() => [])
-      .then(data => selectedBranchId ? data.filter(expense => {
-        const branchId = Array.isArray(expense.branch_id) ? expense.branch_id[0] : expense.branch_id;
-        return branchId === selectedBranchId;
-      }) : data),
+    () => expensesAPI.getAll({ branchId: selectedBranchId }),
     { enabled: !!selectedBranchId, refetchInterval: 30000, retry: false }
   );
 
@@ -271,17 +250,9 @@ const SalesPage = () => {
       };
       
       if (editingExpense) {
-        return fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Expenses/${editingExpense.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }).then(res => res.json());
+        return expensesAPI.update(editingExpense.id, payload);
       } else {
-        return fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Expenses`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }).then(res => res.json());
+        return expensesAPI.create(payload);
       }
     },
     {
