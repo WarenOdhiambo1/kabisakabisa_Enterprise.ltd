@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -62,7 +62,7 @@ const HRPage = () => {
   const [payrollPeriod, setPayrollPeriod] = useState('');
   const [selectedPayrollIds, setSelectedPayrollIds] = useState([]);
 
-  const { register, handleSubmit, reset, setValue } = useForm();
+  const { register, handleSubmit, reset, setValue, watch } = useForm();
   const { register: registerPayroll, handleSubmit: handlePayrollSubmit, reset: resetPayroll } = useForm();
 
   // Queries - Load employees and branches with real-time data
@@ -143,7 +143,7 @@ const HRPage = () => {
   const totalDrivers = drivers.length;
   const activeDrivers = drivers.filter(d => d.is_active).length;
 
-  // Mutations
+  // Mutations with improved error handling
   const createEmployeeMutation = useMutation(
     (data) => hrAPI.createEmployee(data),
     {
@@ -152,9 +152,12 @@ const HRPage = () => {
         setShowAddEmployee(false);
         reset();
         queryClient.invalidateQueries('employees');
+        queryClient.invalidateQueries('payroll');
       },
-      onError: () => {
-        toast.error('Failed to create employee');
+      onError: (error) => {
+        const message = error.response?.data?.message || 'Failed to create employee';
+        toast.error(message);
+        console.error('Create employee error:', error);
       }
     }
   );
@@ -168,9 +171,12 @@ const HRPage = () => {
         setShowAddEmployee(false);
         reset();
         queryClient.invalidateQueries('employees');
+        queryClient.invalidateQueries('payroll');
       },
-      onError: () => {
-        toast.error('Failed to update employee');
+      onError: (error) => {
+        const message = error.response?.data?.message || 'Failed to update employee';
+        toast.error(message);
+        console.error('Update employee error:', error);
       }
     }
   );
@@ -191,14 +197,17 @@ const HRPage = () => {
   const generatePayrollMutation = useMutation(
     (data) => hrAPI.generatePayroll(data),
     {
-      onSuccess: () => {
-        toast.success('Payroll generated successfully!');
+      onSuccess: (response) => {
+        const message = response.message || 'Payroll generated successfully!';
+        toast.success(`${message} (${response.records || 0} records created)`);
         setShowGeneratePayroll(false);
         resetPayroll();
         queryClient.invalidateQueries('payroll');
       },
-      onError: () => {
-        toast.error('Failed to generate payroll');
+      onError: (error) => {
+        const message = error.response?.data?.message || 'Failed to generate payroll';
+        toast.error(message);
+        console.error('Generate payroll error:', error);
       }
     }
   );
@@ -217,16 +226,31 @@ const HRPage = () => {
   );
 
   const onSubmitEmployee = (data) => {
-    // Backend validation: full_name, email, role are required
-    if (!data.full_name || !data.email || !data.role) {
-      toast.error('Full name, email, and role are required');
+    // Validate required fields
+    if (!data.full_name?.trim()) {
+      toast.error('Full name is required');
+      return;
+    }
+    if (!data.email?.trim()) {
+      toast.error('Email is required');
+      return;
+    }
+    if (!data.role) {
+      toast.error('Role is required');
       return;
     }
     
-    // Password validation for new employees (backend requirement)
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email.trim())) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    // Password validation for new employees
     if (!editingEmployee) {
-      if (!data.password || !data.password.trim()) {
-        toast.error('Password is required when creating a new employee');
+      if (!data.password?.trim()) {
+        toast.error('Password is required for new employees');
         return;
       }
       if (data.password.trim().length < 8) {
@@ -235,19 +259,20 @@ const HRPage = () => {
       }
     }
 
+    // Build clean data object
     const cleanData = {
       full_name: data.full_name.trim(),
       email: data.email.toLowerCase().trim(),
       role: data.role
     };
     
-    // Optional fields
+    // Add optional fields
     if (data.phone?.trim()) cleanData.phone = data.phone.trim();
-    if (data.branch_id) cleanData.branch_id = data.branch_id;
-    if (data.salary) cleanData.salary = parseFloat(data.salary);
+    if (data.branch_id && data.branch_id !== '') cleanData.branch_id = data.branch_id;
+    if (data.salary && !isNaN(parseFloat(data.salary))) cleanData.salary = parseFloat(data.salary);
     if (data.hire_date) cleanData.hire_date = data.hire_date;
     
-    // Password handling
+    // Handle passwords
     if (!editingEmployee && data.password?.trim()) {
       cleanData.password = data.password.trim();
     } else if (editingEmployee && data.new_password?.trim()) {
@@ -258,6 +283,7 @@ const HRPage = () => {
       cleanData.new_password = data.new_password.trim();
     }
 
+    // Submit data
     if (editingEmployee) {
       updateEmployeeMutation.mutate({ id: editingEmployee.id, data: cleanData });
     } else {
@@ -266,7 +292,38 @@ const HRPage = () => {
   };
 
   const onSubmitPayroll = (data) => {
-    generatePayrollMutation.mutate(data);
+    // Validate payroll data
+    if (!data.period_start) {
+      toast.error('Period start date is required');
+      return;
+    }
+    if (!data.period_end) {
+      toast.error('Period end date is required');
+      return;
+    }
+    
+    // Validate date range
+    const startDate = new Date(data.period_start);
+    const endDate = new Date(data.period_end);
+    if (startDate >= endDate) {
+      toast.error('Period end date must be after start date');
+      return;
+    }
+    
+    // Validate deductions percentage
+    const deductionsPercentage = parseFloat(data.deductions_percentage || 15);
+    if (deductionsPercentage < 0 || deductionsPercentage > 50) {
+      toast.error('Deductions percentage must be between 0% and 50%');
+      return;
+    }
+    
+    const payrollData = {
+      period_start: data.period_start,
+      period_end: data.period_end,
+      deductions_percentage: deductionsPercentage
+    };
+    
+    generatePayrollMutation.mutate(payrollData);
   };
 
   const handleEditEmployee = (employee) => {
@@ -300,28 +357,37 @@ const HRPage = () => {
     return colors[role] || 'default';
   };
 
-  // Calculate statistics
+  // Calculate statistics with proper null checks
   const totalEmployees = allEmployees.length;
-  const activeEmployees = allEmployees.filter(emp => emp.is_active).length;
+  const activeEmployees = allEmployees.filter(emp => emp.is_active !== false).length;
   const totalSalaryExpense = allEmployees
-    .filter(emp => emp.is_active && emp.salary)
+    .filter(emp => emp.is_active !== false && emp.salary)
     .reduce((sum, emp) => sum + parseFloat(emp.salary || 0), 0);
   const pendingPayroll = allPayroll.filter(p => p.payment_status === 'pending').length;
   const averageSalary = activeEmployees > 0 ? totalSalaryExpense / activeEmployees : 0;
 
+  // Watch form values for validation
+  const watchedValues = watch();
+
+  // Add effect to handle initial data loading
+  useEffect(() => {
+    if (!isLoading && allEmployees.length === 0 && branches.length === 0) {
+      console.warn('HR Page: No data loaded - check API connections');
+    }
+  }, [isLoading, allEmployees.length, branches.length]);
+
   if (isLoading) {
     return (
-      <Container maxWidth="xl" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center' }}>
-        <div>Loading HR data...</div>
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>Loading HR Management System...</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Fetching employees, payroll, and branch data
+          </Typography>
+        </Box>
       </Container>
     );
   }
-
-  console.log('HR Page Data:', { 
-    employees: allEmployees.length, 
-    branches: branches.length,
-    branchesData: branches
-  });
 
   return (
     <Container maxWidth="xl" sx={{ mt: { xs: 2, md: 4 }, mb: { xs: 2, md: 4 }, px: { xs: 1, sm: 2 } }}>
@@ -565,17 +631,17 @@ const HRPage = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {employees.map((employee) => {
+                  {employees.length > 0 ? employees.map((employee) => {
                     const branchId = Array.isArray(employee.branch_id) ? employee.branch_id[0] : employee.branch_id;
                     const employeeBranch = branches.find(b => b.id === branchId);
                     return (
                       <TableRow key={employee.id}>
-                        <TableCell>{(employee.full_name || '').toLowerCase()}</TableCell>
-                        <TableCell>{(employee.email || '').toLowerCase()}</TableCell>
+                        <TableCell>{(employee.full_name || 'Unknown').toLowerCase()}</TableCell>
+                        <TableCell>{(employee.email || 'No email').toLowerCase()}</TableCell>
                         <TableCell>{employee.phone || 'N/A'}</TableCell>
                         <TableCell>
                           <Chip 
-                            label={employee.role === 'logistics' ? 'DRIVER' : (employee.role || '').toUpperCase()}
+                            label={employee.role === 'logistics' ? 'DRIVER' : (employee.role || 'UNKNOWN').toUpperCase()}
                             color={getRoleColor(employee.role)}
                             size="small"
                             icon={employee.role === 'logistics' ? <LocalShipping /> : undefined}
@@ -638,7 +704,23 @@ const HRPage = () => {
                         </TableCell>
                       </TableRow>
                     );
-                  })}
+                  }) : (
+                  <TableRow>
+                    <TableCell colSpan={9} align="center">
+                      <Box sx={{ py: 4 }}>
+                        <Typography variant="h6" color="text.secondary" gutterBottom>
+                          No employees found
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {employeeSearch || selectedRole || selectedBranch 
+                            ? 'Try adjusting your search filters' 
+                            : 'Click "Add Employee" to create your first employee record'
+                          }
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                )}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -916,14 +998,24 @@ const HRPage = () => {
               fullWidth
               label="Full Name *"
               margin="normal"
-              {...register('full_name', { required: true })}
+              {...register('full_name', { required: 'Full name is required' })}
+              error={!watchedValues?.full_name && watchedValues?.full_name !== undefined}
+              helperText={!watchedValues?.full_name && watchedValues?.full_name !== undefined ? 'Full name is required' : ''}
             />
             <TextField
               fullWidth
               label="Email *"
               type="email"
               margin="normal"
-              {...register('email', { required: true })}
+              {...register('email', { 
+                required: 'Email is required',
+                pattern: {
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                  message: 'Please enter a valid email address'
+                }
+              })}
+              error={watchedValues?.email !== undefined && (!watchedValues?.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(watchedValues?.email))}
+              helperText={watchedValues?.email !== undefined && (!watchedValues?.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(watchedValues?.email)) ? 'Valid email is required' : ''}
             />
             <TextField
               fullWidth
@@ -931,11 +1023,12 @@ const HRPage = () => {
               margin="normal"
               {...register('phone')}
             />
-            <FormControl fullWidth margin="normal">
+            <FormControl fullWidth margin="normal" error={!watchedValues?.role && watchedValues?.role !== undefined}>
               <InputLabel>Role *</InputLabel>
               <Select
-                {...register('role', { required: true })}
+                {...register('role', { required: 'Role is required' })}
                 label="Role"
+                value={watchedValues?.role || ''}
               >
                 <MenuItem value="boss">Boss</MenuItem>
                 <MenuItem value="manager">Manager</MenuItem>
@@ -999,7 +1092,14 @@ const HRPage = () => {
                   type="password"
                   margin="normal"
                   helperText="Minimum 8 characters required"
-                  {...register('password', { required: true, minLength: 8 })}
+                  {...register('password', { 
+                    required: 'Password is required',
+                    minLength: {
+                      value: 8,
+                      message: 'Password must be at least 8 characters long'
+                    }
+                  })}
+                  error={watchedValues?.password !== undefined && (!watchedValues?.password || watchedValues?.password.length < 8)}
                 />
                 <Alert severity="warning" sx={{ mt: 2 }}>
                   <Typography variant="body2">
