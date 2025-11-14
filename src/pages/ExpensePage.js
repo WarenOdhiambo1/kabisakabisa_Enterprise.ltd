@@ -179,8 +179,7 @@ const ExpensePage = () => {
       branch_id: selectedBranchId ? [selectedBranchId] : undefined,
       vehicle_id: data.vehicle_id ? [data.vehicle_id] : undefined,
       receipt_number: data.receipt_number || undefined,
-      supplier_name: data.supplier_name || undefined,
-      created_at: new Date().toISOString()
+      supplier_name: data.supplier_name || undefined
     };
 
     if (editingExpense) {
