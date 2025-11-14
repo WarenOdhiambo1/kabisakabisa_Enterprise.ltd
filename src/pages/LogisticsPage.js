@@ -238,7 +238,7 @@ const LogisticsPage = ({ openExternalPortal }) => {
     }
 
     // Validate plate number format (basic validation)
-    const plateRegex = /^[A-Z0-9\s\-]{3,15}$/i;
+    const plateRegex = /^[A-Z0-9\s-]{3,15}$/i;
     if (!plateRegex.test(data.plate_number.trim())) {
       toast.error('Please enter a valid plate number');
       return;

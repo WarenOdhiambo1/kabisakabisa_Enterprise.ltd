@@ -268,7 +268,7 @@ const HRPage = () => {
     
     // Phone validation if provided
     if (data.phone?.trim()) {
-      const phoneRegex = /^[+]?[0-9\s\-()]{10,15}$/;
+      const phoneRegex = /^[+]?[0-9\s-()]{10,15}$/;
       if (!phoneRegex.test(data.phone.trim())) {
         toast.error('Please enter a valid phone number');
         return;
