@@ -90,29 +90,57 @@ export const branchesAPI = {
   delete: (id) => api.delete(`/branches/${id}`).then(res => res.data),
 };
 
-// Stock API
+// Stock API - using data routes
 export const stockAPI = {
-  getAll: () => api.get('/stock').then(res => res.data),
-  getByBranch: (branchId) => api.get(`/stock/branch/${branchId}`).then(res => res.data),
-  addStock: (branchId, data) => api.post(`/stock/branch/${branchId}`, data).then(res => res.data),
-  addQuantity: (stockId, quantity) => api.patch(`/stock/${stockId}/add-quantity`, { quantity }).then(res => res.data),
-  transfer: (data) => api.post('/stock/transfer', data).then(res => res.data),
-  getPendingTransfers: (branchId) => api.get(`/stock/transfers/pending/${branchId}`).then(res => res.data),
-  approveTransfer: (transferId) => api.patch(`/stock/transfers/${transferId}/approve`).then(res => res.data),
-  rejectTransfer: (transferId) => api.patch(`/stock/transfers/${transferId}/reject`).then(res => res.data),
-  updateStock: (stockId, data) => api.put(`/stock/${stockId}`, data).then(res => res.data),
-  deleteStock: (stockId) => api.delete(`/stock/${stockId}`).then(res => res.data),
+  getAll: () => api.get('/data/Stock').then(res => res.data),
+  getByBranch: (branchId) => api.get('/data/Stock').then(res => {
+    const stock = res.data || [];
+    return stock.filter(item => item.branch_id && item.branch_id.includes(branchId));
+  }),
+  addStock: (branchId, data) => api.post('/data/Stock', { ...data, branch_id: [branchId] }).then(res => res.data),
+  addQuantity: (stockId, quantity) => api.get(`/data/Stock/${stockId}`).then(stock => 
+    api.put(`/data/Stock/${stockId}`, { 
+      ...stock.data, 
+      quantity_available: (stock.data.quantity_available || 0) + quantity 
+    })
+  ).then(res => res.data),
+  transfer: (data) => api.post('/data/Stock_Movements', data).then(res => res.data),
+  getPendingTransfers: (branchId) => api.get('/data/Stock_Movements').then(res => {
+    const movements = res.data || [];
+    return movements.filter(m => m.to_branch_id && m.to_branch_id.includes(branchId) && m.status === 'pending');
+  }),
+  approveTransfer: (transferId) => api.put(`/data/Stock_Movements/${transferId}`, { status: 'approved' }).then(res => res.data),
+  rejectTransfer: (transferId) => api.put(`/data/Stock_Movements/${transferId}`, { status: 'rejected' }).then(res => res.data),
+  updateStock: (stockId, data) => api.put(`/data/Stock/${stockId}`, data).then(res => res.data),
+  deleteStock: (stockId) => api.delete(`/data/Stock/${stockId}`).then(res => res.data),
 };
 
-// Sales API
+// Sales API - using data routes
 export const salesAPI = {
-  getByBranch: (branchId, params) => api.get(`/sales/branch/${branchId}`, { params }).then(res => res.data),
-  createSale: (branchId, data) => api.post(`/sales/branch/${branchId}`, data).then(res => res.data),
-  getDailySummary: (branchId, date) => api.get(`/sales/summary/daily/${branchId}`, { params: { date } }).then(res => res.data),
-  recordExpense: (branchId, data) => api.post(`/sales/expenses/branch/${branchId}`, data).then(res => res.data),
-  getExpenses: (branchId, params) => api.get(`/sales/expenses/branch/${branchId}`, { params }).then(res => res.data),
-  getFundsTracking: (branchId, date) => api.get(`/sales/funds/branch/${branchId}`, { params: { date } }).then(res => res.data),
-  updateSale: (saleId, data) => api.put(`/sales/${saleId}`, data).then(res => res.data),
+  getByBranch: (branchId, params) => api.get('/data/Sales').then(res => {
+    const sales = res.data || [];
+    return sales.filter(sale => sale.branch_id && sale.branch_id.includes(branchId));
+  }),
+  createSale: (branchId, data) => api.post('/data/Sales', { ...data, branch_id: [branchId] }).then(res => res.data),
+  getDailySummary: (branchId, date) => salesAPI.getByBranch(branchId).then(sales => {
+    const dailySales = sales.filter(sale => sale.sale_date === date);
+    return {
+      totalSales: dailySales.reduce((sum, sale) => sum + (parseFloat(sale.total_amount) || 0), 0),
+      salesCount: dailySales.length,
+      sales: dailySales
+    };
+  }),
+  recordExpense: (branchId, data) => api.post('/data/Expenses', { ...data, branch_id: [branchId] }).then(res => res.data),
+  getExpenses: (branchId, params) => expensesAPI.getAll({ branchId, ...params }),
+  getFundsTracking: (branchId, date) => Promise.all([
+    salesAPI.getDailySummary(branchId, date),
+    expensesAPI.getAll({ branchId, startDate: date, endDate: date })
+  ]).then(([sales, expenses]) => ({
+    revenue: sales.totalSales,
+    expenses: expenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0),
+    profit: sales.totalSales - expenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0)
+  })),
+  updateSale: (saleId, data) => api.put(`/data/Sales/${saleId}`, data).then(res => res.data),
 };
 
 // Logistics API
