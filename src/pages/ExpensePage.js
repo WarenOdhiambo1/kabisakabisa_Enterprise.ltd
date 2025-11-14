@@ -67,7 +67,14 @@ const ExpensePage = () => {
       startDate: dateRange.startDate,
       endDate: dateRange.endDate
     }),
-    { enabled: true }
+    { 
+      enabled: true,
+      retry: 2,
+      onError: (error) => {
+        console.error('Failed to fetch expenses:', error);
+        toast.error('Failed to load expenses. Please try again.');
+      }
+    }
   );
 
   const { data: branches = [] } = useQuery('branches', () => branchesAPI.getAll());
@@ -95,7 +102,13 @@ const ExpensePage = () => {
       startDate: dateRange.startDate,
       endDate: dateRange.endDate
     }),
-    { enabled: true }
+    { 
+      enabled: true,
+      retry: 2,
+      onError: (error) => {
+        console.error('Failed to fetch expense summary:', error);
+      }
+    }
   );
 
   // Mutations
@@ -163,10 +176,11 @@ const ExpensePage = () => {
       category: data.category,
       amount: parseFloat(data.amount),
       description: data.description.trim(),
-      branch_id: selectedBranchId || undefined,
-      vehicle_id: data.vehicle_id || undefined,
+      branch_id: selectedBranchId ? [selectedBranchId] : undefined,
+      vehicle_id: data.vehicle_id ? [data.vehicle_id] : undefined,
       receipt_number: data.receipt_number || undefined,
-      supplier_name: data.supplier_name || undefined
+      supplier_name: data.supplier_name || undefined,
+      created_at: new Date().toISOString()
     };
 
     if (editingExpense) {
@@ -182,7 +196,7 @@ const ExpensePage = () => {
     setValue('category', expense.category);
     setValue('amount', expense.amount);
     setValue('description', expense.description);
-    setValue('vehicle_id', expense.vehicle_id?.[0] || '');
+    setValue('vehicle_id', Array.isArray(expense.vehicle_id) ? expense.vehicle_id[0] : expense.vehicle_id || '');
     setValue('receipt_number', expense.receipt_number || '');
     setValue('supplier_name', expense.supplier_name || '');
     setShowExpenseModal(true);
@@ -346,8 +360,18 @@ const ExpensePage = () => {
                           {expense.description || 'N/A'}
                         </Typography>
                       </TableCell>
-                      <TableCell>{expense.branch_name || 'N/A'}</TableCell>
-                      <TableCell>{expense.vehicle_plate_number || 'N/A'}</TableCell>
+                      <TableCell>
+                        {Array.isArray(expense.branch_id) && expense.branch_id.length > 0 
+                          ? branches.find(b => b.id === expense.branch_id[0])?.branch_name || 'Unknown Branch'
+                          : 'N/A'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        {Array.isArray(expense.vehicle_id) && expense.vehicle_id.length > 0
+                          ? vehicles.find(v => v.id === expense.vehicle_id[0])?.plate_number || expense.vehicle_plate_number || 'N/A'
+                          : expense.vehicle_plate_number || 'N/A'
+                        }
+                      </TableCell>
                       <TableCell>{expense.receipt_number || '-'}</TableCell>
                       <TableCell>
                         <IconButton onClick={() => handleEdit(expense)} size="small">

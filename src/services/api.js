@@ -208,14 +208,92 @@ export const documentsAPI = {
   deleteDocument: (documentId) => api.delete(`/documents/${documentId}`).then(res => res.data)
 };
 
-// Expenses API
+// Expenses API - using data routes for compatibility
 export const expensesAPI = {
-  getAll: (params) => api.get('/expenses', { params }).then(res => res.data),
-  create: (data) => api.post('/expenses', data).then(res => res.data),
-  update: (id, data) => api.put(`/expenses/${id}`, data).then(res => res.data),
-  delete: (id) => api.delete(`/expenses/${id}`).then(res => res.data),
-  getCategories: () => api.get('/expenses/categories').then(res => res.data),
-  getSummary: (params) => api.get('/expenses/summary', { params }).then(res => res.data),
+  getAll: (params) => {
+    return api.get('/data/Expenses').then(res => {
+      let expenses = res.data || [];
+      
+      // Filter by branch if provided
+      if (params?.branchId) {
+        expenses = expenses.filter(expense => 
+          expense.branch_id && expense.branch_id.includes(params.branchId)
+        );
+      }
+      
+      // Filter by date range if provided
+      if (params?.startDate && params?.endDate) {
+        expenses = expenses.filter(expense => {
+          if (!expense.expense_date) return false;
+          const expenseDate = new Date(expense.expense_date);
+          const start = new Date(params.startDate);
+          const end = new Date(params.endDate);
+          return expenseDate >= start && expenseDate <= end;
+        });
+      }
+      
+      // Filter by category if provided
+      if (params?.category) {
+        expenses = expenses.filter(expense => expense.category === params.category);
+      }
+      
+      return expenses;
+    });
+  },
+  create: (data) => api.post('/data/Expenses', data).then(res => res.data),
+  update: (id, data) => api.put(`/data/Expenses/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/data/Expenses/${id}`).then(res => res.data),
+  getCategories: () => Promise.resolve([
+    { value: 'office_supplies', label: 'Office Supplies' },
+    { value: 'travel', label: 'Travel' },
+    { value: 'marketing', label: 'Marketing' },
+    { value: 'utilities', label: 'Utilities' },
+    { value: 'rent', label: 'Rent' },
+    { value: 'insurance', label: 'Insurance' },
+    { value: 'maintenance', label: 'Maintenance' },
+    { value: 'fuel', label: 'Fuel' },
+    { value: 'equipment', label: 'Equipment' },
+    { value: 'professional_services', label: 'Professional Services' },
+    { value: 'training', label: 'Training' },
+    { value: 'other', label: 'Other' }
+  ]),
+  getSummary: (params) => {
+    return expensesAPI.getAll(params).then(expenses => {
+      const summary = expenses.reduce((acc, expense) => {
+        const category = expense.category || 'other';
+        const amount = parseFloat(expense.amount) || 0;
+        
+        if (!acc[category]) {
+          acc[category] = {
+            category,
+            total_amount: 0,
+            count: 0,
+            expenses: []
+          };
+        }
+        
+        acc[category].total_amount += amount;
+        acc[category].count += 1;
+        acc[category].expenses.push({
+          id: expense.id,
+          expense_date: expense.expense_date,
+          amount: expense.amount,
+          description: expense.description
+        });
+        
+        return acc;
+      }, {});
+      
+      const totalAmount = Object.values(summary).reduce((sum, cat) => sum + cat.total_amount, 0);
+      
+      return {
+        summary: Object.values(summary),
+        total_amount: totalAmount,
+        total_expenses: expenses.length,
+        period: { startDate: params?.startDate, endDate: params?.endDate }
+      };
+    });
+  },
 };
 
 // Enhanced Stock API with more endpoints
