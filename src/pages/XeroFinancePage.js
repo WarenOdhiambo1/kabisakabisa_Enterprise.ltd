@@ -32,7 +32,7 @@ import {
 
 import { useQuery } from 'react-query';
 import { formatCurrency } from '../theme';
-import { genericDataAPI } from '../services/api';
+import { genericDataAPI, expensesAPI } from '../services/api';
 import { verifyFinanceDataLinkage, formatVerificationReport } from '../utils/financeDataVerification';
 import XeroProfitLossReport from '../components/XeroProfitLossReport';
 import XeroBalanceSheet from '../components/XeroBalanceSheet';
@@ -160,7 +160,7 @@ const XeroFinancePage = () => {
         created_at: new Date().toISOString()
       };
 
-      await genericDataAPI.create('Expenses', data);
+      await expensesAPI.create(data);
       alert('Expense added successfully!');
       setShowNewTransaction(false);
       setNewTransaction({
