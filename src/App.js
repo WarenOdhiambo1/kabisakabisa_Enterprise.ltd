@@ -41,7 +41,7 @@ function AppContent() {
   const { user, loading } = useAuth();
   const [externalPortal, setExternalPortal] = useState(null);
   
-  console.log('AppContent - user:', user, 'loading:', loading);
+  // console.log('AppContent - user:', user, 'loading:', loading);
 
   const openExternalPortal = (url, title) => {
     setExternalPortal({ url, title });
@@ -163,46 +163,32 @@ function AppContent() {
 function DashboardRedirect() {
   const { user } = useAuth();
   
-  console.log('DashboardRedirect - Full user object:', JSON.stringify(user, null, 2));
-  console.log('DashboardRedirect - user.role:', user?.role);
-  console.log('DashboardRedirect - typeof user.role:', typeof user?.role);
-  
   if (!user) {
-    console.log('No user in DashboardRedirect, redirecting to login');
     return <Navigate to="/login" replace />;
   }
   
   const role = user?.role;
-  console.log('Switching on role:', role);
   
   // Redirect to appropriate dashboard based on role
   switch (role) {
     case 'boss':
-      console.log('Redirecting to boss page');
       return <Navigate to="/boss" replace />;
     case 'manager':
-      console.log('Redirecting to manager page');
       return <Navigate to="/manager" replace />;
     case 'hr':
-      console.log('Redirecting to hr page');
       return <Navigate to="/hr" replace />;
     case 'admin':
-      console.log('Redirecting to admin page');
       return <Navigate to="/admin" replace />;
     case 'sales':
-      console.log('Redirecting to sales page');
       const branchId = user.branchId || user.branch_id || (user.branch_id && user.branch_id[0]);
       if (branchId) {
         return <Navigate to={`/sales/${branchId}`} replace />;
       } else {
-        console.log('No branch ID found for sales user, redirecting to home');
         return <Navigate to="/" replace />;
       }
     case 'logistics':
-      console.log('Redirecting to logistics page');
       return <Navigate to="/logistics" replace />;
     default:
-      console.log('Unknown role, redirecting to home. Role was:', role);
       return <Navigate to="/" replace />;
   }
 }

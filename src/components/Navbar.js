@@ -99,7 +99,7 @@ const Navbar = ({ openExternalPortal }) => {
   const canAccessAdmin = user?.role === 'admin';
 
   return (
-    <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: 'white', color: 'black', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+    <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: 'transparent', color: 'black', boxShadow: 'none', border: 'none' }}>
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: 'orange', fontWeight: 'bold' }}>
           kabisakabisa enterprise
@@ -123,6 +123,7 @@ const Navbar = ({ openExternalPortal }) => {
                 color="inherit"
                 startIcon={<Dashboard />}
                 onClick={() => navigate('/dashboard')}
+                sx={{ bgcolor: 'transparent', border: 'none' }}
               >
                 Dashboard
               </Button>
@@ -133,6 +134,7 @@ const Navbar = ({ openExternalPortal }) => {
               color="inherit"
               startIcon={<People />}
               onClick={() => navigate('/hr')}
+              sx={{ bgcolor: 'transparent', border: 'none' }}
             >
               HR
             </Button>
@@ -144,6 +146,7 @@ const Navbar = ({ openExternalPortal }) => {
               color="inherit"
               startIcon={<Business />}
               onClick={() => navigate('/manager')}
+              sx={{ bgcolor: 'transparent', border: 'none' }}
             >
               Manager
             </Button>
@@ -155,6 +158,7 @@ const Navbar = ({ openExternalPortal }) => {
               color="inherit"
               startIcon={<Business />}
               onClick={() => navigate('/admin')}
+              sx={{ bgcolor: 'transparent', border: 'none' }}
             >
               Admin
             </Button>
@@ -169,6 +173,7 @@ const Navbar = ({ openExternalPortal }) => {
                 color="inherit"
                 startIcon={<Store />}
                 onClick={handleSalesMenuOpen}
+                sx={{ bgcolor: 'transparent', border: 'none' }}
               >
                 Sales
               </Button>
@@ -199,6 +204,7 @@ const Navbar = ({ openExternalPortal }) => {
                 color="inherit"
                 startIcon={<Inventory />}
                 onClick={handleStockMenuOpen}
+                sx={{ bgcolor: 'transparent', border: 'none' }}
               >
                 Stock
               </Button>
@@ -228,6 +234,7 @@ const Navbar = ({ openExternalPortal }) => {
               color="inherit"
               startIcon={<Business />}
               onClick={() => navigate('/boss')}
+              sx={{ bgcolor: 'transparent', border: 'none' }}
             >
               Boss
             </Button>
@@ -239,6 +246,7 @@ const Navbar = ({ openExternalPortal }) => {
               color="inherit"
               startIcon={<LocalShipping />}
               onClick={() => navigate('/logistics')}
+              sx={{ bgcolor: 'transparent', border: 'none' }}
             >
               Logistics
             </Button>
@@ -250,6 +258,7 @@ const Navbar = ({ openExternalPortal }) => {
               color="inherit"
               startIcon={<ShoppingCart />}
               onClick={() => navigate('/orders')}
+              sx={{ bgcolor: 'transparent', border: 'none' }}
             >
               Orders
             </Button>
@@ -261,6 +270,7 @@ const Navbar = ({ openExternalPortal }) => {
               color="inherit"
               startIcon={<Receipt />}
               onClick={() => navigate('/expenses')}
+              sx={{ bgcolor: 'transparent', border: 'none' }}
             >
               Expenses
             </Button>
@@ -272,6 +282,7 @@ const Navbar = ({ openExternalPortal }) => {
               color="inherit"
               startIcon={<AccountBalance />}
               onClick={() => navigate('/finance')}
+              sx={{ bgcolor: 'transparent', border: 'none' }}
             >
               Finance
             </Button>
@@ -282,6 +293,7 @@ const Navbar = ({ openExternalPortal }) => {
             color="inherit"
             startIcon={<AccountBalance />}
             onClick={handleKraMenuOpen}
+            sx={{ bgcolor: 'transparent', border: 'none' }}
           >
             KRA Portal
           </Button>

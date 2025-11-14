@@ -89,13 +89,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
-      console.log('Calling login API with:', credentials);
       const response = await authAPI.login(credentials);
-      console.log('Login API response:', response);
-      console.log('Response type:', typeof response);
-      console.log('Response keys:', Object.keys(response));
-      console.log('Response.user:', response.user);
-      console.log('Response.user type:', typeof response.user);
       
       if (response.requiresMfaSetup) {
         return { requiresMfaSetup: true, userId: response.userId };
@@ -124,7 +118,6 @@ export const AuthProvider = ({ children }) => {
         sameSite: 'strict'
       });
 
-      console.log('Setting user in AuthContext:', response.user);
       setUser(response.user);
       setupSessionTimeout();
       
