@@ -26,7 +26,7 @@ import {
   Paper,
   IconButton
 } from '@mui/material';
-import { Add, Edit, Delete, TrendingUp, Business, AttachFile } from '@mui/icons-material';
+import { Add, Edit, Delete, TrendingUp, Business } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useForm } from 'react-hook-form';
 import { expensesAPI, branchesAPI, logisticsAPI } from '../services/api';
@@ -39,7 +39,7 @@ const ExpensePage = () => {
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
-  const [selectedExpenseForDocs, setSelectedExpenseForDocs] = useState(null);
+
   const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
@@ -374,16 +374,7 @@ const ExpensePage = () => {
                         <IconButton onClick={() => handleEdit(expense)} size="small">
                           <Edit />
                         </IconButton>
-                        <IconButton 
-                          onClick={() => {
-                            setSelectedExpenseForDocs(expense);
-                          }} 
-                          size="small"
-                          color="primary"
-                          title="Upload Documents"
-                        >
-                          <AttachFile />
-                        </IconButton>
+
                         <IconButton 
                           onClick={() => deleteExpenseMutation.mutate(expense.id)} 
                           size="small"
@@ -508,18 +499,7 @@ const ExpensePage = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Document Uploader */}
-        tableName="Expenses"
-        recordId={selectedExpenseForDocs?.id}
-        onClose={() => {
-          setSelectedExpenseForDocs(null);
-        }}
-        title={`Upload Documents - ${selectedExpenseForDocs?.description || 'Expense'}`}
-        allowedFields={[
-          { field: 'receipt_attachment', label: 'Receipt/Invoice', required: true },
-          { field: 'supporting_documents', label: 'Supporting Documents', required: false }
-        ]}
-      />
+
     </Container>
   );
 };
