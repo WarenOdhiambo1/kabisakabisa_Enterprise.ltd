@@ -90,81 +90,29 @@ export const branchesAPI = {
   delete: (id) => api.delete(`/branches/${id}`).then(res => res.data),
 };
 
-// Stock API - using data routes
+// Stock API - using dedicated routes like logistics
 export const stockAPI = {
-  getAll: () => api.get('/data/Stock').then(res => res.data),
-  getByBranch: (branchId) => api.get('/data/Stock').then(res => {
-    const stock = res.data || [];
-    return stock.filter(item => item.branch_id && item.branch_id.includes(branchId));
-  }),
-  addStock: (branchId, data) => api.post('/data/Stock', {
-    branch_id: [branchId],
-    product_id: data.product_id || `PRD_${Date.now()}`,
-    product_name: data.product_name,
-    quantity_available: parseInt(data.quantity_available || data.quantity || 0),
-    unit_price: parseFloat(data.unit_price || 0),
-    reorder_level: parseInt(data.reorder_level || 10)
-  }).then(res => res.data),
-  addQuantity: (stockId, quantity) => api.get(`/data/Stock/${stockId}`).then(stock => 
-    api.put(`/data/Stock/${stockId}`, { 
-      ...stock.data, 
-      quantity_available: (stock.data.quantity_available || 0) + quantity 
-    })
-  ).then(res => res.data),
-  transfer: (data) => api.post('/data/Stock_Movements', {
-    from_branch_id: [data.from_branch_id],
-    to_branch_id: [data.to_branch_id],
-    product_id: data.product_id,
-    product_name: data.product_name,
-    quantity: parseInt(data.quantity),
-    status: 'pending',
-    reason: data.reason || '',
-    created_at: new Date().toISOString()
-  }).then(res => res.data),
-  getPendingTransfers: (branchId) => api.get('/data/Stock_Movements').then(res => {
-    const movements = res.data || [];
-    return movements.filter(m => m.to_branch_id && m.to_branch_id.includes(branchId) && m.status === 'pending');
-  }),
-  approveTransfer: (transferId) => api.put(`/data/Stock_Movements/${transferId}`, { status: 'approved' }).then(res => res.data),
-  rejectTransfer: (transferId) => api.put(`/data/Stock_Movements/${transferId}`, { status: 'rejected' }).then(res => res.data),
-  updateStock: (stockId, data) => api.put(`/data/Stock/${stockId}`, data).then(res => res.data),
-  deleteStock: (stockId) => api.delete(`/data/Stock/${stockId}`).then(res => res.data),
+  getAll: () => api.get('/stock').then(res => res.data),
+  getByBranch: (branchId) => api.get(`/stock/branch/${branchId}`).then(res => res.data),
+  addStock: (branchId, data) => api.post('/stock', { ...data, branchId }).then(res => res.data),
+  addQuantity: (stockId, quantity) => api.post(`/stock/${stockId}/add-quantity`, { quantity }).then(res => res.data),
+  transfer: (data) => api.post('/stock/transfer', data).then(res => res.data),
+  getPendingTransfers: (branchId) => api.get(`/stock/transfers/pending/${branchId}`).then(res => res.data),
+  approveTransfer: (transferId) => api.put(`/stock/transfers/${transferId}/approve`).then(res => res.data),
+  rejectTransfer: (transferId) => api.put(`/stock/transfers/${transferId}/reject`).then(res => res.data),
+  updateStock: (stockId, data) => api.put(`/stock/${stockId}`, data).then(res => res.data),
+  deleteStock: (stockId) => api.delete(`/stock/${stockId}`).then(res => res.data),
 };
 
-// Sales API - using data routes
+// Sales API - using dedicated routes like logistics
 export const salesAPI = {
-  getByBranch: (branchId, params) => api.get('/data/Sales').then(res => {
-    const sales = res.data || [];
-    return sales.filter(sale => sale.branch_id && sale.branch_id.includes(branchId));
-  }),
-  createSale: (branchId, data) => api.post('/data/Sales', {
-    branch_id: [branchId],
-    employee_id: data.employee_id ? [data.employee_id] : undefined,
-    sale_date: data.sale_date || new Date().toISOString().split('T')[0],
-    total_amount: parseFloat(data.total_amount || 0),
-    payment_method: data.payment_method || 'cash',
-    customer_name: data.customer_name || '',
-    items: data.items || []
-  }).then(res => res.data),
-  getDailySummary: (branchId, date) => salesAPI.getByBranch(branchId).then(sales => {
-    const dailySales = sales.filter(sale => sale.sale_date === date);
-    return {
-      totalSales: dailySales.reduce((sum, sale) => sum + (parseFloat(sale.total_amount) || 0), 0),
-      salesCount: dailySales.length,
-      sales: dailySales
-    };
-  }),
-  recordExpense: (branchId, data) => api.post('/data/Expenses', { ...data, branch_id: [branchId] }).then(res => res.data),
-  getExpenses: (branchId, params) => expensesAPI.getAll({ branchId, ...params }),
-  getFundsTracking: (branchId, date) => Promise.all([
-    salesAPI.getDailySummary(branchId, date),
-    expensesAPI.getAll({ branchId, startDate: date, endDate: date })
-  ]).then(([sales, expenses]) => ({
-    revenue: sales.totalSales,
-    expenses: expenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0),
-    profit: sales.totalSales - expenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0)
-  })),
-  updateSale: (saleId, data) => api.put(`/data/Sales/${saleId}`, data).then(res => res.data),
+  getByBranch: (branchId, params) => api.get(`/sales/branch/${branchId}`, { params }).then(res => res.data),
+  createSale: (branchId, data) => api.post('/sales', { ...data, branchId }).then(res => res.data),
+  getDailySummary: (branchId, date) => api.get(`/sales/summary/daily/${branchId}`, { params: { date } }).then(res => res.data),
+  recordExpense: (branchId, data) => api.post(`/sales/expenses/branch/${branchId}`, data).then(res => res.data),
+  getExpenses: (branchId, params) => api.get(`/sales/expenses/branch/${branchId}`, { params }).then(res => res.data),
+  getFundsTracking: (branchId, date) => api.get(`/sales/funds/branch/${branchId}`, { params: { date } }).then(res => res.data),
+  updateSale: (saleId, data) => api.put(`/sales/${saleId}`, data).then(res => res.data),
 };
 
 // Logistics API
@@ -260,52 +208,12 @@ export const documentsAPI = {
   deleteDocument: (documentId) => api.delete(`/documents/${documentId}`).then(res => res.data)
 };
 
-// Expenses API - using data routes for compatibility
+// Expenses API - using dedicated routes like logistics
 export const expensesAPI = {
-  getAll: (params) => {
-    return api.get('/data/Expenses').then(res => {
-      let expenses = res.data || [];
-      
-      // Filter by branch if provided
-      if (params?.branchId) {
-        expenses = expenses.filter(expense => 
-          expense.branch_id && expense.branch_id.includes(params.branchId)
-        );
-      }
-      
-      // Filter by date range if provided
-      if (params?.startDate && params?.endDate) {
-        expenses = expenses.filter(expense => {
-          if (!expense.expense_date) return false;
-          const expenseDate = new Date(expense.expense_date);
-          const start = new Date(params.startDate);
-          const end = new Date(params.endDate);
-          return expenseDate >= start && expenseDate <= end;
-        });
-      }
-      
-      // Filter by category if provided
-      if (params?.category) {
-        expenses = expenses.filter(expense => expense.category === params.category);
-      }
-      
-      return expenses;
-    });
-  },
-  create: (data) => api.post('/data/Expenses', {
-    branch_id: data.branch_id ? [data.branch_id] : undefined,
-    expense_date: data.expense_date,
-    category: data.category,
-    amount: parseFloat(data.amount),
-    description: data.description,
-    vehicle_id: data.vehicle_id ? [data.vehicle_id] : undefined,
-    vehicle_plate_number: data.vehicle_plate_number,
-    receipt_number: data.receipt_number,
-    supplier_name: data.supplier_name,
-    created_by: data.created_by ? [data.created_by] : undefined
-  }).then(res => res.data),
-  update: (id, data) => api.put(`/data/Expenses/${id}`, data).then(res => res.data),
-  delete: (id) => api.delete(`/data/Expenses/${id}`).then(res => res.data),
+  getAll: (params) => api.get('/expenses', { params }).then(res => res.data),
+  create: (data) => api.post('/expenses', data).then(res => res.data),
+  update: (id, data) => api.put(`/expenses/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/expenses/${id}`).then(res => res.data),
   getCategories: () => Promise.resolve([
     { value: 'office_supplies', label: 'Office Supplies' },
     { value: 'travel', label: 'Travel' },
@@ -367,13 +275,10 @@ export const stockAPIEnhanced = {
   getMovements: (branchId, params) => api.get(`/stock/movements/${branchId}`, { params }).then(res => res.data),
 };
 
-// Update stockAPI to include missing methods using data routes
-stockAPI.getPendingTransfers = (branchId) => api.get('/data/Stock_Movements').then(res => {
-  const movements = res.data || [];
-  return movements.filter(m => m.to_branch_id && m.to_branch_id.includes(branchId) && m.status === 'pending');
-});
-stockAPI.approveTransfer = (transferId) => api.put(`/data/Stock_Movements/${transferId}`, { status: 'approved' }).then(res => res.data);
-stockAPI.rejectTransfer = (transferId) => api.put(`/data/Stock_Movements/${transferId}`, { status: 'rejected' }).then(res => res.data);
+// Update stockAPI to include missing methods using dedicated routes
+stockAPI.getPendingTransfers = (branchId) => api.get(`/stock/transfers/pending/${branchId}`).then(res => res.data);
+stockAPI.approveTransfer = (transferId) => api.patch(`/stock/transfers/${transferId}/approve`).then(res => res.data);
+stockAPI.rejectTransfer = (transferId) => api.patch(`/stock/transfers/${transferId}/reject`).then(res => res.data);
 
 // Finance API
 export const financeAPI = {
@@ -414,38 +319,50 @@ export const dataAPI = {
 
         case 'manager':
           if (!branchId) throw new Error('Branch ID required for manager page');
-          const [branch, managerStock, branchEmployees] = await Promise.all([
+          const [branch, managerStock, branchEmployees, managerSales] = await Promise.all([
             branchesAPI.getById(branchId),
             api.get(`/stock/branch/${branchId}`).then(res => res.data),
-            hrAPI.getEmployees().then(emps => emps.filter(e => e.branch_id && e.branch_id.includes(branchId)))
+            hrAPI.getEmployees().then(emps => emps.filter(e => e.branch_id && e.branch_id.includes(branchId))),
+            api.get(`/sales/branch/${branchId}`).then(res => res.data).catch(() => [])
           ]);
           const lowStockItems = managerStock.filter(item => item.quantity_available <= item.reorder_level);
+          const todayRevenue = managerSales
+            .filter(s => s.sale_date === new Date().toISOString().split('T')[0])
+            .reduce((sum, s) => sum + (s.total_amount || 0), 0);
           return {
             branch,
             summary: {
               totalEmployees: branchEmployees.length,
               totalStock: managerStock.length,
               lowStockAlerts: lowStockItems.length,
-              todayRevenue: 0,
-              totalRevenue: 0,
-              todaySalesCount: 0
+              todayRevenue,
+              totalRevenue: managerSales.reduce((sum, s) => sum + (s.total_amount || 0), 0),
+              todaySalesCount: managerSales.filter(s => s.sale_date === new Date().toISOString().split('T')[0]).length
             },
             employees: branchEmployees,
             stock: managerStock,
-            sales: [],
+            sales: managerSales,
             lowStockItems,
             weeklyData: []
           };
 
         case 'sales':
-          const salesParams = new URLSearchParams(params).toString();
-          const url = `/data/page/sales${salesParams ? `?${salesParams}` : ''}`;
-          return api.get(url).then(res => res.data);
+          if (!branchId) throw new Error('Branch ID required for sales page');
+          const [salesData, stockForSales, expensesData] = await Promise.all([
+            api.get(`/sales/branch/${branchId}`, { params }).then(res => res.data),
+            api.get(`/stock/branch/${branchId}`).then(res => res.data),
+            api.get(`/sales/expenses/branch/${branchId}`, { params }).then(res => res.data)
+          ]);
+          return { sales: salesData, stock: stockForSales, expenses: expensesData };
 
         case 'stock':
           if (!branchId) throw new Error('Branch ID required for stock page');
-          const stockData = await api.get(`/stock/branch/${branchId}`).then(res => res.data);
-          return { stock: stockData, transfers: [], movements: [] };
+          const [stockData, transfers, movements] = await Promise.all([
+            api.get(`/stock/branch/${branchId}`).then(res => res.data),
+            api.get(`/stock/transfers/pending/${branchId}`).then(res => res.data).catch(() => []),
+            api.get(`/stock/movements/${branchId}`).then(res => res.data).catch(() => [])
+          ]);
+          return { stock: stockData, transfers, movements };
 
         case 'logistics':
           const [vehicles, trips, maintenance] = await Promise.all([
@@ -466,17 +383,16 @@ export const dataAPI = {
           return { employees: employeesData, payroll: payrollData };
 
         case 'boss':
-          const [bossBranches, bossEmployees, bossStock, bossSales] = await Promise.all([
+          const [bossBranches, bossEmployees, bossStock] = await Promise.all([
             branchesAPI.getAll(),
             hrAPI.getEmployees(),
-            api.get('/stock/debug').then(res => res.data.stock),
-            api.get('/stock/debug').then(res => res.data.sales || [])
+            api.get('/stock').then(res => res.data)
           ]);
           const dashboard = {
             totalBranches: bossBranches.length,
             totalEmployees: bossEmployees.length,
             totalStock: bossStock.length,
-            totalRevenue: bossSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0)
+            totalRevenue: 0
           };
           const rotAnalysis = { averageROT: 15.5 };
           return { dashboard, rotAnalysis };
@@ -492,8 +408,8 @@ export const dataAPI = {
 
   // Refresh specific data types
   refreshData: {
-    stock: (branchId) => stockAPI.getByBranch(branchId),
-    sales: (branchId, params) => salesAPI.getByBranch(branchId, params),
+    stock: (branchId) => api.get(`/stock/branch/${branchId}`).then(res => res.data),
+    sales: (branchId, params) => api.get(`/sales/branch/${branchId}`, { params }).then(res => res.data),
     employees: (params) => hrAPI.getEmployees(params),
     vehicles: () => logisticsAPI.getVehicles(),
     orders: (params) => ordersAPI.getAll(params),

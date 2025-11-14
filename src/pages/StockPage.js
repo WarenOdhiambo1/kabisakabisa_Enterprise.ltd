@@ -36,7 +36,8 @@ import { useForm } from 'react-hook-form';
 import { formatCurrency } from '../theme';
 import HistoricalDataViewer from '../components/HistoricalDataViewer';
 import StockForm from '../components/forms/StockForm';
-import { stockAPI, genericDataAPI, branchesAPI } from '../services/api';
+import { stockAPI, branchesAPI } from '../services/api';
+import api from '../services/api';
 import toast from 'react-hot-toast';
 
 const StockPage = () => {
@@ -60,12 +61,7 @@ const StockPage = () => {
 
   const { data: stockMovements = [], isLoading: movementsLoading } = useQuery(
     ['stockMovements', branchId],
-    () => genericDataAPI.getAll('Stock_Movements')
-      .then(data => branchId ? data.filter(movement => {
-        const fromBranchId = Array.isArray(movement.from_branch_id) ? movement.from_branch_id[0] : movement.from_branch_id;
-        const toBranchId = Array.isArray(movement.to_branch_id) ? movement.to_branch_id[0] : movement.to_branch_id;
-        return fromBranchId === branchId || toBranchId === branchId;
-      }) : data),
+    () => branchId ? api.get(`/stock/movements/${branchId}`).then(res => res.data) : [],
     { enabled: !!branchId, refetchInterval: 30000, retry: false }
   );
 

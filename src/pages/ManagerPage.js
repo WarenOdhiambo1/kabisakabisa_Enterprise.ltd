@@ -34,89 +34,65 @@ import {
 import { useQuery } from 'react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../theme';
+import { hrAPI, salesAPI, stockAPI, expensesAPI, branchesAPI, ordersAPI, logisticsAPI } from '../services/api';
 
 const ManagerPage = () => {
   useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const [selectedBranch, setSelectedBranch] = useState('');
 
-  // Fetch all database tables with relationships
+  // Fetch all database tables using authenticated API services
   const { data: employees = [], isLoading: employeesLoading } = useQuery(
     'manager-employees',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Employees`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
+    () => hrAPI.getEmployees().catch(() => []),
     { refetchInterval: 30000, retry: false }
   );
 
   const { data: sales = [], isLoading: salesLoading } = useQuery(
     'manager-sales',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Sales`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
-    { refetchInterval: 10000, retry: false }
+    () => selectedBranch ? salesAPI.getByBranch(selectedBranch).catch(() => []) : [],
+    { refetchInterval: 10000, retry: false, enabled: !!selectedBranch }
   );
-
-
 
   const { data: expenses = [] } = useQuery(
     'manager-expenses',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Expenses`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
+    () => expensesAPI.getAll({ branchId: selectedBranch }).catch(() => []),
     { refetchInterval: 30000, retry: false }
   );
 
   const { data: stock = [], isLoading: stockLoading } = useQuery(
     'manager-stock',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
-    { refetchInterval: 30000, retry: false }
-  );
-
-  const { data: stockMovements = [] } = useQuery(
-    'manager-stock-movements',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Stock_Movements`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
+    () => selectedBranch ? stockAPI.getByBranch(selectedBranch).catch(() => []) : stockAPI.getAll().catch(() => []),
     { refetchInterval: 30000, retry: false }
   );
 
   const { data: branches = [] } = useQuery(
     'manager-branches',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Branches`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
+    () => branchesAPI.getAll().catch(() => []),
     { retry: false }
   );
 
   const { data: orders = [] } = useQuery(
     'manager-orders',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Orders`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
-    { refetchInterval: 30000, retry: false }
-  );
-
-  const { data: orderItems = [] } = useQuery(
-    'manager-order-items',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Order_Items`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
+    () => ordersAPI.getAll().catch(() => []),
     { refetchInterval: 30000, retry: false }
   );
 
   const { data: vehicles = [] } = useQuery(
     'manager-vehicles',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Vehicles`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
+    () => logisticsAPI.getVehicles().catch(() => []),
     { retry: false }
   );
 
   const { data: trips = [] } = useQuery(
     'manager-trips',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Trips`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
+    () => logisticsAPI.getTrips().catch(() => []),
     { refetchInterval: 30000, retry: false }
   );
 
   const { data: payroll = [] } = useQuery(
     'manager-payroll',
-    () => fetch(`${process.env.REACT_APP_API_URL || 'https://kabisakabisabackendenterpriseltd.vercel.app/api'}/data/Payroll`)
-      .then(res => res.ok ? res.json() : []).catch(() => []),
+    () => hrAPI.getPayroll().catch(() => []),
     { refetchInterval: 30000, retry: false }
   );
 
