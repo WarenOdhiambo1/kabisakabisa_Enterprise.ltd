@@ -182,32 +182,48 @@ const StockPage = () => {
   );
 
   const onSubmit = (data) => {
-    // Backend validation: product_name, quantity_available, unit_price are required
+    // Enhanced validation with sanitization
     if (!data.product_name?.trim()) {
       toast.error('Product name is required');
       return;
     }
-    if (!data.quantity_available && data.quantity_available !== 0) {
+    if (data.quantity_available === undefined || data.quantity_available === null || data.quantity_available === '') {
       toast.error('Quantity is required');
       return;
     }
-    if (!data.unit_price) {
-      toast.error('Unit price is required');
+    if (!data.unit_price || isNaN(parseFloat(data.unit_price))) {
+      toast.error('Valid unit price is required');
+      return;
+    }
+
+    // Sanitize and validate numeric inputs
+    const quantity = parseInt(data.quantity_available);
+    const price = parseFloat(data.unit_price);
+    const reorderLevel = parseInt(data.reorder_level) || 10;
+
+    if (quantity < 0) {
+      toast.error('Quantity cannot be negative');
+      return;
+    }
+    if (price <= 0) {
+      toast.error('Unit price must be greater than 0');
+      return;
+    }
+    if (reorderLevel < 0) {
+      toast.error('Reorder level cannot be negative');
       return;
     }
 
     const cleanData = {
-      product_name: data.product_name.trim(),
-      quantity_available: parseInt(data.quantity_available),
-      unit_price: parseFloat(data.unit_price)
+      product_name: data.product_name.trim().toLowerCase(),
+      quantity_available: quantity,
+      unit_price: price,
+      reorder_level: reorderLevel
     };
     
-    // Optional fields
+    // Optional fields with sanitization
     if (data.product_id?.trim()) {
-      cleanData.product_id = data.product_id.trim();
-    }
-    if (data.reorder_level) {
-      cleanData.reorder_level = parseInt(data.reorder_level);
+      cleanData.product_id = data.product_id.trim().toUpperCase();
     }
 
     if (editingStock) {
@@ -218,36 +234,46 @@ const StockPage = () => {
   };
 
   const onSubmitTransfer = (data) => {
-    // Validate transfer data
-    if (!data.product_id) {
+    // Enhanced validation with sanitization
+    if (!data.product_id?.trim()) {
       toast.error('Please select a product to transfer');
       return;
     }
-    if (!data.to_branch_id) {
+    if (!data.to_branch_id?.trim()) {
       toast.error('Please select destination branch');
       return;
     }
-    if (!data.quantity || data.quantity <= 0) {
-      toast.error('Please enter a valid quantity');
+    
+    const quantity = parseInt(data.quantity);
+    if (!quantity || quantity <= 0 || isNaN(quantity)) {
+      toast.error('Please enter a valid quantity (must be a positive number)');
       return;
     }
 
-    // Check stock availability
-    const stockItem = stock.find(s => s.product_id === data.product_id);
+    // Check stock availability with enhanced validation
+    const stockItem = stock.find(s => s.product_id === data.product_id.trim());
     if (!stockItem) {
-      toast.error('Selected product not found in stock');
+      toast.error('Selected product not found in current branch stock');
       return;
     }
-    if (stockItem.quantity_available < data.quantity) {
-      toast.error(`Only ${stockItem.quantity_available} units available for transfer`);
+    if (stockItem.quantity_available < quantity) {
+      toast.error(`Insufficient stock: Only ${stockItem.quantity_available} units available for transfer`);
+      return;
+    }
+    if (data.to_branch_id === branchId) {
+      toast.error('Cannot transfer to the same branch');
       return;
     }
 
-    transferStockMutation.mutate({
-      ...data,
+    const transferData = {
+      product_id: data.product_id.trim(),
+      to_branch_id: data.to_branch_id.trim(),
       from_branch_id: branchId,
-      quantity: parseInt(data.quantity)
-    });
+      quantity: quantity,
+      reason: data.reason?.trim() || 'Stock transfer'
+    };
+
+    transferStockMutation.mutate(transferData);
   };
 
   const handleEdit = (stockItem) => {

@@ -236,9 +236,13 @@ const HRPage = () => {
   );
 
   const onSubmitEmployee = (data) => {
-    // Validate required fields
+    // Enhanced validation with security checks
     if (!data.full_name?.trim()) {
       toast.error('Full name is required');
+      return;
+    }
+    if (data.full_name.trim().length < 2) {
+      toast.error('Full name must be at least 2 characters');
       return;
     }
     if (!data.email?.trim()) {
@@ -250,11 +254,25 @@ const HRPage = () => {
       return;
     }
     
-    // Email validation
+    // Enhanced email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(data.email.trim())) {
+    const email = data.email.toLowerCase().trim();
+    if (!emailRegex.test(email)) {
       toast.error('Please enter a valid email address');
       return;
+    }
+    if (email.length > 254) {
+      toast.error('Email address is too long');
+      return;
+    }
+    
+    // Phone validation if provided
+    if (data.phone?.trim()) {
+      const phoneRegex = /^[+]?[0-9\s\-()]{10,15}$/;
+      if (!phoneRegex.test(data.phone.trim())) {
+        toast.error('Please enter a valid phone number');
+        return;
+      }
     }
     
     // Password validation for new employees
@@ -263,34 +281,59 @@ const HRPage = () => {
         toast.error('Password is required for new employees');
         return;
       }
-      if (data.password.trim().length < 8) {
+      const password = data.password.trim();
+      if (password.length < 8) {
         toast.error('Password must be at least 8 characters long');
+        return;
+      }
+      if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+        toast.error('Password must contain at least one uppercase letter, one lowercase letter, and one number');
         return;
       }
     }
 
-    // Build clean data object
+    // Salary validation
+    if (data.salary && (isNaN(parseFloat(data.salary)) || parseFloat(data.salary) < 0)) {
+      toast.error('Salary must be a valid positive number');
+      return;
+    }
+
+    // Build clean data object with sanitization
     const cleanData = {
-      full_name: data.full_name.trim(),
-      email: data.email.toLowerCase().trim(),
-      role: data.role
+      full_name: data.full_name.trim().replace(/\s+/g, ' '), // Remove extra spaces
+      email: email,
+      role: data.role,
+      is_active: data.is_active !== false
     };
     
-    // Add optional fields
-    if (data.phone?.trim()) cleanData.phone = data.phone.trim();
-    if (data.branch_id && data.branch_id !== '') cleanData.branch_id = data.branch_id;
-    if (data.salary && !isNaN(parseFloat(data.salary))) cleanData.salary = parseFloat(data.salary);
-    if (data.hire_date) cleanData.hire_date = data.hire_date;
+    // Add optional fields with validation
+    if (data.phone?.trim()) {
+      cleanData.phone = data.phone.trim().replace(/\s+/g, '');
+    }
+    if (data.branch_id && data.branch_id !== '') {
+      cleanData.branch_id = data.branch_id;
+    }
+    if (data.salary && !isNaN(parseFloat(data.salary))) {
+      cleanData.salary = Math.round(parseFloat(data.salary) * 100) / 100; // Round to 2 decimal places
+    }
+    if (data.hire_date) {
+      cleanData.hire_date = data.hire_date;
+    }
     
-    // Handle passwords
+    // Handle passwords with enhanced security
     if (!editingEmployee && data.password?.trim()) {
       cleanData.password = data.password.trim();
     } else if (editingEmployee && data.new_password?.trim()) {
-      if (data.new_password.trim().length < 8) {
+      const newPassword = data.new_password.trim();
+      if (newPassword.length < 8) {
         toast.error('New password must be at least 8 characters long');
         return;
       }
-      cleanData.new_password = data.new_password.trim();
+      if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+        toast.error('New password must contain at least one uppercase letter, one lowercase letter, and one number');
+        return;
+      }
+      cleanData.new_password = newPassword;
     }
 
     // Submit data
@@ -302,7 +345,7 @@ const HRPage = () => {
   };
 
   const onSubmitPayroll = (data) => {
-    // Validate payroll data
+    // Enhanced payroll validation
     if (!data.period_start) {
       toast.error('Period start date is required');
       return;
@@ -312,17 +355,38 @@ const HRPage = () => {
       return;
     }
     
-    // Validate date range
+    // Enhanced date validation
     const startDate = new Date(data.period_start);
     const endDate = new Date(data.period_end);
+    const today = new Date();
+    
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      toast.error('Please enter valid dates');
+      return;
+    }
     if (startDate >= endDate) {
       toast.error('Period end date must be after start date');
       return;
     }
+    if (endDate > today) {
+      toast.error('Period end date cannot be in the future');
+      return;
+    }
     
-    // Validate deductions percentage
+    // Calculate period length
+    const periodDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    if (periodDays > 93) { // ~3 months
+      toast.error('Payroll period cannot exceed 3 months');
+      return;
+    }
+    if (periodDays < 1) {
+      toast.error('Payroll period must be at least 1 day');
+      return;
+    }
+    
+    // Enhanced deductions validation
     const deductionsPercentage = parseFloat(data.deductions_percentage || 15);
-    if (deductionsPercentage < 0 || deductionsPercentage > 50) {
+    if (isNaN(deductionsPercentage) || deductionsPercentage < 0 || deductionsPercentage > 50) {
       toast.error('Deductions percentage must be between 0% and 50%');
       return;
     }
@@ -330,7 +394,7 @@ const HRPage = () => {
     const payrollData = {
       period_start: data.period_start,
       period_end: data.period_end,
-      deductions_percentage: deductionsPercentage
+      deductions_percentage: Math.round(deductionsPercentage * 100) / 100
     };
     
     generatePayrollMutation.mutate(payrollData);

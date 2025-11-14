@@ -247,8 +247,13 @@ const AdminPage = () => {
   );
 
   const onSubmit = (data) => {
+    // Enhanced admin form validation
     if (!data.full_name?.trim()) {
       toast.error('Full name is required');
+      return;
+    }
+    if (data.full_name.trim().length < 2) {
+      toast.error('Full name must be at least 2 characters');
       return;
     }
     if (!data.email?.trim()) {
@@ -260,24 +265,70 @@ const AdminPage = () => {
       return;
     }
     
+    // Enhanced email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const email = data.email.toLowerCase().trim();
+    if (!emailRegex.test(email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    if (email.length > 254) {
+      toast.error('Email address is too long');
+      return;
+    }
+    
+    // Phone validation if provided
+    if (data.phone?.trim()) {
+      const phoneRegex = /^[+]?[0-9\s\-()]{10,15}$/;
+      if (!phoneRegex.test(data.phone.trim())) {
+        toast.error('Please enter a valid phone number');
+        return;
+      }
+    }
+    
+    // Salary validation
+    if (data.salary && (isNaN(parseFloat(data.salary)) || parseFloat(data.salary) < 0)) {
+      toast.error('Salary must be a valid positive number');
+      return;
+    }
+    
     const cleanData = {
-      full_name: data.full_name.trim(),
-      email: data.email.toLowerCase().trim(),
+      full_name: data.full_name.trim().replace(/\s+/g, ' '),
+      email: email,
       role: data.role,
       is_active: data.is_active !== false
     };
     
-    if (data.phone?.trim()) cleanData.phone = data.phone.trim();
-    if (data.branch_id && data.branch_id !== '') cleanData.branch_id = data.branch_id;
-    if (data.salary && data.salary !== '' && !isNaN(data.salary)) cleanData.salary = parseFloat(data.salary);
-    if (data.hire_date) cleanData.hire_date = data.hire_date;
+    // Add optional fields with validation
+    if (data.phone?.trim()) {
+      cleanData.phone = data.phone.trim().replace(/\s+/g, '');
+    }
+    if (data.branch_id && data.branch_id !== '') {
+      cleanData.branch_id = data.branch_id;
+    }
+    if (data.salary && !isNaN(parseFloat(data.salary))) {
+      cleanData.salary = Math.round(parseFloat(data.salary) * 100) / 100;
+    }
+    if (data.hire_date) {
+      cleanData.hire_date = data.hire_date;
+    }
     
-    // Handle password for both create and update
+    // Enhanced password handling
     if (data.password && data.password.trim()) {
+      const password = data.password.trim();
+      if (password.length < 8) {
+        toast.error('Password must be at least 8 characters long');
+        return;
+      }
+      if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+        toast.error('Password must contain at least one uppercase letter, one lowercase letter, and one number');
+        return;
+      }
+      
       if (editingUser) {
-        cleanData.new_password = data.password.trim();
+        cleanData.new_password = password;
       } else {
-        cleanData.password = data.password.trim();
+        cleanData.password = password;
       }
     } else if (!editingUser && ['admin', 'boss'].includes(user?.role)) {
       toast.error('Password is required for new users');
@@ -311,16 +362,39 @@ const AdminPage = () => {
   };
 
   const onSubmitBranch = (data) => {
+    // Enhanced branch validation
     if (!data.branch_name?.trim()) {
       toast.error('Branch name is required');
       return;
     }
+    if (data.branch_name.trim().length < 2) {
+      toast.error('Branch name must be at least 2 characters');
+      return;
+    }
+    
+    // Email validation if provided
+    if (data.email?.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(data.email.trim())) {
+        toast.error('Please enter a valid email address');
+        return;
+      }
+    }
+    
+    // Phone validation if provided
+    if (data.phone?.trim()) {
+      const phoneRegex = /^[+]?[0-9\s\-()]{10,15}$/;
+      if (!phoneRegex.test(data.phone.trim())) {
+        toast.error('Please enter a valid phone number');
+        return;
+      }
+    }
     
     const cleanData = {
-      branch_name: data.branch_name.trim(),
+      branch_name: data.branch_name.trim().replace(/\s+/g, ' '),
       location_address: data.location_address?.trim() || '',
-      phone: data.phone?.trim() || '',
-      email: data.email?.trim() || ''
+      phone: data.phone?.trim().replace(/\s+/g, '') || '',
+      email: data.email?.trim().toLowerCase() || ''
     };
     
     if (editingBranch) {
@@ -331,8 +405,13 @@ const AdminPage = () => {
   };
 
   const onSubmitProduct = (data) => {
+    // Enhanced product validation
     if (!data.product_name?.trim()) {
       toast.error('Product name is required');
+      return;
+    }
+    if (data.product_name.trim().length < 2) {
+      toast.error('Product name must be at least 2 characters');
       return;
     }
     if (!data.branch_id) {
@@ -340,11 +419,29 @@ const AdminPage = () => {
       return;
     }
     
+    // Validate numeric fields
+    const unitPrice = parseFloat(data.unit_price) || 0;
+    const quantity = parseInt(data.quantity_available) || 0;
+    const reorderLevel = parseInt(data.reorder_level) || 10;
+    
+    if (unitPrice < 0) {
+      toast.error('Unit price cannot be negative');
+      return;
+    }
+    if (quantity < 0) {
+      toast.error('Quantity cannot be negative');
+      return;
+    }
+    if (reorderLevel < 0) {
+      toast.error('Reorder level cannot be negative');
+      return;
+    }
+    
     const cleanData = {
-      product_name: data.product_name.trim(),
-      unit_price: parseFloat(data.unit_price) || 0,
-      quantity_available: parseInt(data.quantity_available) || 0,
-      reorder_level: parseInt(data.reorder_level) || 10,
+      product_name: data.product_name.trim().toLowerCase(),
+      unit_price: Math.round(unitPrice * 100) / 100,
+      quantity_available: quantity,
+      reorder_level: reorderLevel,
       branch_id: [data.branch_id] // Airtable link field format
     };
     

@@ -172,13 +172,68 @@ const OrdersPage = () => {
   };
 
   const onSubmitOrder = (data) => {
-    createOrderMutation.mutate(data);
+    // Enhanced validation for order creation
+    if (!data.supplier_name?.trim()) {
+      toast.error('Supplier name is required');
+      return;
+    }
+    if (!data.order_date) {
+      toast.error('Order date is required');
+      return;
+    }
+    if (!data.items || data.items.length === 0) {
+      toast.error('At least one item is required');
+      return;
+    }
+
+    // Validate each item
+    for (let i = 0; i < data.items.length; i++) {
+      const item = data.items[i];
+      if (!item.product_name?.trim()) {
+        toast.error(`Product name is required for item ${i + 1}`);
+        return;
+      }
+      if (!item.quantity_ordered || item.quantity_ordered <= 0) {
+        toast.error(`Valid quantity is required for item ${i + 1}`);
+        return;
+      }
+      if (!item.purchase_price_per_unit || item.purchase_price_per_unit <= 0) {
+        toast.error(`Valid unit price is required for item ${i + 1}`);
+        return;
+      }
+    }
+
+    // Sanitize data
+    const cleanData = {
+      supplier_name: data.supplier_name.trim(),
+      order_date: data.order_date,
+      expected_delivery_date: data.expected_delivery_date || null,
+      items: data.items.map(item => ({
+        product_name: item.product_name.trim(),
+        quantity_ordered: parseInt(item.quantity_ordered),
+        purchase_price_per_unit: parseFloat(item.purchase_price_per_unit),
+        branch_destination_id: item.branch_destination_id || null
+      }))
+    };
+
+    createOrderMutation.mutate(cleanData);
   };
 
   const onSubmitPayment = (data) => {
+    // Enhanced payment validation
+    const amount = parseFloat(data.amount);
+    if (!amount || amount <= 0 || isNaN(amount)) {
+      toast.error('Please enter a valid payment amount');
+      return;
+    }
+    if (amount > selectedOrder.balance_remaining) {
+      toast.error(`Payment amount cannot exceed balance remaining (${formatCurrency(selectedOrder.balance_remaining)})`);
+      return;
+    }
+
     recordPaymentMutation.mutate({
       orderId: selectedOrder.id,
-      amount: parseFloat(data.amount)
+      amount: Math.round(amount * 100) / 100 // Round to 2 decimal places
     });
   };
 

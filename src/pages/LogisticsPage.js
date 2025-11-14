@@ -227,19 +227,150 @@ const LogisticsPage = ({ openExternalPortal }) => {
   );
 
   const onSubmitVehicle = (data) => {
+    // Enhanced vehicle validation
+    if (!data.plate_number?.trim()) {
+      toast.error('Plate number is required');
+      return;
+    }
+    if (!data.vehicle_type) {
+      toast.error('Vehicle type is required');
+      return;
+    }
+
+    // Validate plate number format (basic validation)
+    const plateRegex = /^[A-Z0-9\s\-]{3,15}$/i;
+    if (!plateRegex.test(data.plate_number.trim())) {
+      toast.error('Please enter a valid plate number');
+      return;
+    }
+
+    // Date validation
+    if (data.purchase_date) {
+      const purchaseDate = new Date(data.purchase_date);
+      const today = new Date();
+      if (purchaseDate > today) {
+        toast.error('Purchase date cannot be in the future');
+        return;
+      }
+    }
+
+    const cleanData = {
+      plate_number: data.plate_number.trim().toUpperCase(),
+      vehicle_type: data.vehicle_type,
+      purchase_date: data.purchase_date || null,
+      current_branch_id: data.current_branch_id || null
+    };
+
     if (editingVehicle) {
-      updateVehicleMutation.mutate({ id: editingVehicle.id, data });
+      updateVehicleMutation.mutate({ id: editingVehicle.id, data: cleanData });
     } else {
-      createVehicleMutation.mutate(data);
+      createVehicleMutation.mutate(cleanData);
     }
   };
 
   const onSubmitTrip = (data) => {
-    createTripMutation.mutate(data);
+    // Enhanced validation for trip creation
+    if (!data.vehicle_id) {
+      toast.error('Please select a vehicle');
+      return;
+    }
+    if (!data.destination?.trim()) {
+      toast.error('Destination is required');
+      return;
+    }
+    if (!data.trip_date) {
+      toast.error('Trip date is required');
+      return;
+    }
+
+    // Validate numeric fields
+    const distance = parseFloat(data.distance_km) || 0;
+    const fuelCost = parseFloat(data.fuel_cost) || 0;
+    const amountCharged = parseFloat(data.amount_charged) || 0;
+
+    if (distance < 0) {
+      toast.error('Distance cannot be negative');
+      return;
+    }
+    if (fuelCost < 0) {
+      toast.error('Fuel cost cannot be negative');
+      return;
+    }
+    if (amountCharged < 0) {
+      toast.error('Amount charged cannot be negative');
+      return;
+    }
+
+    // Date validation
+    const tripDate = new Date(data.trip_date);
+    const today = new Date();
+    if (tripDate > today) {
+      toast.error('Trip date cannot be in the future');
+      return;
+    }
+
+    const cleanData = {
+      vehicle_id: data.vehicle_id,
+      destination: data.destination.trim(),
+      trip_date: data.trip_date,
+      distance_km: Math.round(distance * 100) / 100,
+      fuel_cost: Math.round(fuelCost * 100) / 100,
+      amount_charged: Math.round(amountCharged * 100) / 100,
+      driver_id: data.driver_id || null
+    };
+
+    createTripMutation.mutate(cleanData);
   };
 
   const onSubmitMaintenance = (data) => {
-    createMaintenanceMutation.mutate(data);
+    // Enhanced maintenance validation
+    if (!data.vehicle_id) {
+      toast.error('Please select a vehicle');
+      return;
+    }
+    if (!data.maintenance_date) {
+      toast.error('Maintenance date is required');
+      return;
+    }
+    if (!data.maintenance_type) {
+      toast.error('Maintenance type is required');
+      return;
+    }
+
+    // Validate cost
+    const cost = parseFloat(data.cost) || 0;
+    if (cost < 0) {
+      toast.error('Maintenance cost cannot be negative');
+      return;
+    }
+
+    // Date validation
+    const maintenanceDate = new Date(data.maintenance_date);
+    const today = new Date();
+    if (maintenanceDate > today) {
+      toast.error('Maintenance date cannot be in the future');
+      return;
+    }
+
+    // Next service date validation
+    if (data.next_service_date) {
+      const nextServiceDate = new Date(data.next_service_date);
+      if (nextServiceDate <= maintenanceDate) {
+        toast.error('Next service date must be after maintenance date');
+        return;
+      }
+    }
+
+    const cleanData = {
+      vehicle_id: data.vehicle_id,
+      maintenance_date: data.maintenance_date,
+      maintenance_type: data.maintenance_type,
+      cost: Math.round(cost * 100) / 100,
+      description: data.description?.trim() || '',
+      next_service_date: data.next_service_date || null
+    };
+
+    createMaintenanceMutation.mutate(cleanData);
   };
 
   const handleEditVehicle = (vehicle) => {
