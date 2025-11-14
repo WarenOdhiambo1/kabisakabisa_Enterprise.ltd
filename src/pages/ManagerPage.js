@@ -96,10 +96,6 @@ const ManagerPage = () => {
     { refetchInterval: 30000, retry: false }
   );
 
-  // Placeholder data for removed queries
-  const stockMovements = [];
-  const orderItems = [];
-
   // Helper functions to get related data
   const getBranchName = (branchId) => {
     const id = Array.isArray(branchId) ? branchId[0] : branchId;
