@@ -1014,10 +1014,22 @@ const OrdersPage = () => {
       </Dialog>
 
       {/* Historical Data Viewer */}
+      <Dialog
         open={showHistoricalData}
         onClose={() => setShowHistoricalData(false)}
-        title="Orders Historical Data"
-      />
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>Orders Historical Data</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Historical data viewer for orders analysis
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowHistoricalData(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
