@@ -51,16 +51,16 @@ const StockPage = () => {
   const { register, handleSubmit, reset, setValue } = useForm();
   const { register: registerTransfer, handleSubmit: handleTransferSubmit, reset: resetTransfer } = useForm();
 
-  // Queries - Use authenticated API services
+  // Queries - Use authenticated API services with error handling
   const { data: stock = [], isLoading: stockLoading } = useQuery(
     ['stock', branchId],
-    () => branchId ? stockAPI.getByBranch(branchId) : stockAPI.getAll(),
+    () => branchId ? stockAPI.getByBranch(branchId).catch(() => []) : stockAPI.getAll().catch(() => []),
     { enabled: !!branchId, refetchInterval: 3600000, retry: false }
   );
 
   const { data: stockMovements = [], isLoading: movementsLoading } = useQuery(
     ['stockMovements', branchId],
-    () => branchId ? api.get(`/stock/movements/${branchId}`).then(res => res.data) : [],
+    () => branchId ? api.get(`/stock/movements/${branchId}`).then(res => res.data).catch(() => []) : [],
     { enabled: !!branchId, refetchInterval: 3600000, retry: false }
   );
 
