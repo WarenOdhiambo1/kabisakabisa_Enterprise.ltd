@@ -1,6 +1,7 @@
 import React from 'react';
 import { TextField, Grid, FormControl, InputLabel, Select, MenuItem, IconButton, Box } from '@mui/material';
 import { Delete } from '@mui/icons-material';
+import { Controller } from 'react-hook-form';
 
 const SalesForm = ({ register, control, fields, append, remove, watch, stock }) => {
   const watchedItems = watch('items');
@@ -10,19 +11,34 @@ const SalesForm = ({ register, control, fields, append, remove, watch, stock }) 
       {fields.map((field, index) => (
         <Grid container spacing={2} key={field.id} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={4}>
-            <FormControl fullWidth>
-              <InputLabel>Product</InputLabel>
-              <Select
-                {...register(`items.${index}.product_id`)}
-                label="Product"
-              >
-                {stock.map((item) => (
-                  <MenuItem key={item.product_id} value={item.product_id}>
-                    {item.product_name} (Available: {item.quantity_available})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Controller
+              name={`items.${index}.product_id`}
+              control={control}
+              render={({ field: { onChange, value } }) => (
+                <FormControl fullWidth>
+                  <InputLabel>Product</InputLabel>
+                  <Select
+                    value={value || ''}
+                    onChange={(e) => {
+                      const selectedProduct = stock.find(item => item.product_id === e.target.value);
+                      onChange(e.target.value);
+                      // Also set product_name
+                      if (selectedProduct) {
+                        register(`items.${index}.product_name`).onChange({ target: { value: selectedProduct.product_name } });
+                      }
+                    }}
+                    label="Product"
+                  >
+                    {stock.map((item) => (
+                      <MenuItem key={item.product_id} value={item.product_id}>
+                        {item.product_name} (Available: {item.quantity_available})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+            />
+            <input type="hidden" {...register(`items.${index}.product_name`)} />
           </Grid>
           <Grid item xs={12} sm={2}>
             <TextField
