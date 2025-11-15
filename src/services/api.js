@@ -132,6 +132,16 @@ export const logisticsAPI = {
   createMaintenance: (data) => api.post('/logistics/maintenance', data).then(res => res.data),
 };
 
+// Logistics Transactions API
+export const logisticsTransactionsAPI = {
+  getAll: (params = {}) => api.get('/logistics-transactions', { params }).then(res => res.data),
+  getById: (id) => api.get(`/logistics-transactions/${id}`).then(res => res.data),
+  create: (data) => api.post('/logistics-transactions', data).then(res => res.data),
+  update: (id, data) => api.put(`/logistics-transactions/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/logistics-transactions/${id}`).then(res => res.data),
+  getAnalytics: (params = {}) => api.get('/logistics-transactions/analytics', { params }).then(res => res.data)
+};
+
 // Orders API
 export const ordersAPI = {
   getAll: (params) => api.get('/orders', { params }).then(res => res.data),

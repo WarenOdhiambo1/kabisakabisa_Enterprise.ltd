@@ -53,7 +53,7 @@ import {
   AccountBalanceWallet
 } from '@mui/icons-material';
 import { useQuery } from 'react-query';
-import { salesAPI, expensesAPI, branchesAPI, ordersAPI, stockAPI, hrAPI, logisticsAPI } from '../services/api';
+import { salesAPI, expensesAPI, branchesAPI, ordersAPI, stockAPI, hrAPI, logisticsAPI, logisticsTransactionsAPI } from '../services/api';
 import { formatCurrency } from '../theme';
 
 const FinancePage = () => {
@@ -107,6 +107,14 @@ const FinancePage = () => {
   const { data: stockMovements = [] } = useQuery(
     ['stockMovements', dateRange],
     () => stockAPI.getMovements('all', dateRange).catch(() => [])
+  );
+  const { data: logisticsTransactions = [] } = useQuery(
+    ['logisticsTransactions', dateRange],
+    () => logisticsTransactionsAPI.getAll(dateRange).catch(() => [])
+  );
+  const { data: logisticsAnalytics = {} } = useQuery(
+    ['logisticsAnalytics', dateRange],
+    () => logisticsTransactionsAPI.getAnalytics(dateRange).catch(() => ({}))
   );
 
   // Comprehensive financial calculations
@@ -361,83 +369,83 @@ const FinancePage = () => {
       {/* Comprehensive Financial Metrics */}
       <Grid container spacing={1.5} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', height: 'auto', backgroundColor: '#f5f5f5', boxShadow: 1 }}>
+          <Card sx={{ backgroundColor: '#f5f5f5', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
             <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                  <Typography variant="body2" sx={{ opacity: 0.8, fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Total Revenue</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif' }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Total Revenue</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif', color: '#1976d2' }}>
                     {formatCurrency(totalRevenue)}
                   </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5, opacity: 0.8, fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>
+                  <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>
                     Sales: {salesData.length}
                   </Typography>
                 </Box>
-                <MonetizationOn sx={{ fontSize: 28, opacity: 0.8 }} />
+                <MonetizationOn sx={{ fontSize: 28, color: '#1976d2' }} />
               </Box>
             </CardContent>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white', height: 'auto', backgroundColor: '#f5f5f5', boxShadow: 1 }}>
+          <Card sx={{ backgroundColor: '#f5f5f5', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
             <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                  <Typography variant="body2" sx={{ opacity: 0.8, fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Total Expenses</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif' }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Total Expenses</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif', color: '#d32f2f' }}>
                     {formatCurrency(totalExpenses)}
                   </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5, opacity: 0.8, fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>
+                  <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>
                     Items: {expensesData.length}
                   </Typography>
                 </Box>
-                <Receipt sx={{ fontSize: 28, opacity: 0.8 }} />
+                <Receipt sx={{ fontSize: 28, color: '#d32f2f' }} />
               </Box>
             </CardContent>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white', height: 'auto', backgroundColor: '#f5f5f5', boxShadow: 1 }}>
+          <Card sx={{ backgroundColor: '#f5f5f5', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
             <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                  <Typography variant="body2" sx={{ opacity: 0.8, fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Stock Value</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif' }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Stock Value</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif', color: '#2e7d32' }}>
                     {formatCurrency(stockValue)}
                   </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5, opacity: 0.8, fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>
+                  <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>
                     Items: {stockData.length}
                   </Typography>
                 </Box>
-                <Inventory sx={{ fontSize: 28, opacity: 0.8 }} />
+                <Inventory sx={{ fontSize: 28, color: '#2e7d32' }} />
               </Box>
             </CardContent>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: 'white', height: 'auto', backgroundColor: '#f5f5f5', boxShadow: 1 }}>
+          <Card sx={{ backgroundColor: '#f5f5f5', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
             <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                  <Typography variant="body2" sx={{ opacity: 0.8, fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Payroll Cost</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif' }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Payroll Cost</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif', color: '#ed6c02' }}>
                     {formatCurrency(totalPayroll)}
                   </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5, opacity: 0.8, fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>
+                  <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>
                     Staff: {employeesData.length}
                   </Typography>
                 </Box>
-                <People sx={{ fontSize: 28, opacity: 0.8 }} />
+                <People sx={{ fontSize: 28, color: '#ed6c02' }} />
               </Box>
             </CardContent>
           </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', color: '#333', height: 'auto', backgroundColor: '#f5f5f5', boxShadow: 1 }}>
+          <Card sx={{ backgroundColor: '#f5f5f5', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
             <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
@@ -449,7 +457,7 @@ const FinancePage = () => {
                     Margin: {profitMargin.toFixed(1)}%
                   </Typography>
                 </Box>
-                <AccountBalanceWallet sx={{ fontSize: 28, opacity: 0.8 }} />
+                <AccountBalanceWallet sx={{ fontSize: 28, color: netProfit >= 0 ? '#2e7d32' : '#d32f2f' }} />
               </Box>
             </CardContent>
           </Card>
@@ -470,7 +478,7 @@ const FinancePage = () => {
             <Tab icon={<Receipt />} label="expense breakdown" sx={{ fontFamily: 'Nunito, sans-serif', textTransform: 'lowercase' }} />
             <Tab icon={<Inventory />} label="asset management" sx={{ fontFamily: 'Nunito, sans-serif', textTransform: 'lowercase' }} />
             <Tab icon={<People />} label="hr financials" sx={{ fontFamily: 'Nunito, sans-serif', textTransform: 'lowercase' }} />
-            <Tab icon={<LocalShipping />} label="operations" sx={{ fontFamily: 'Nunito, sans-serif', textTransform: 'lowercase' }} />
+            <Tab icon={<LocalShipping />} label="logistics finance" sx={{ fontFamily: 'Nunito, sans-serif', textTransform: 'lowercase' }} />
             <Tab icon={<Timeline />} label="reports" sx={{ fontFamily: 'Nunito, sans-serif', textTransform: 'lowercase' }} />
           </Tabs>
         </Box>
@@ -849,8 +857,192 @@ const FinancePage = () => {
           </Grid>
         </TabPanel>
 
-        {/* Operations Tab */}
+        {/* Logistics Finance Tab */}
         <TabPanel value={activeTab} index={5}>
+          <Typography variant="h6" gutterBottom sx={{ fontFamily: 'Nunito, sans-serif' }}>Logistics Financial Operations</Typography>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            {/* Transportation Revenue Card */}
+            <Grid item xs={12} md={3}>
+              <Card sx={{ backgroundColor: '#f5f5f5', boxShadow: 1, border: '1px solid #e0e0e0' }}>
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                      <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Transportation Revenue</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif', color: '#1976d2' }}>
+                        {formatCurrency(logisticsTransactions.filter(t => t.transaction_type === 'Outbound Shipment').reduce((sum, t) => sum + (t.amount || 0), 0))}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>Trips: {logisticsTransactions.filter(t => t.transaction_type === 'Outbound Shipment').length}</Typography>
+                    </Box>
+                    <LocalShipping sx={{ fontSize: 28, color: '#1976d2' }} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            {/* Fleet Operating Costs Card */}
+            <Grid item xs={12} md={3}>
+              <Card sx={{ backgroundColor: '#f5f5f5', boxShadow: 1, border: '1px solid #e0e0e0' }}>
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                      <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Fleet Operating Costs</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif', color: '#d32f2f' }}>
+                        {formatCurrency(logisticsTransactions.filter(t => t.transaction_type === 'Freight Payment').reduce((sum, t) => sum + (t.amount || 0), 0))}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>Vehicles: {vehiclesData.length}</Typography>
+                    </Box>
+                    <Receipt sx={{ fontSize: 28, color: '#d32f2f' }} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            {/* Shipping Costs Card */}
+            <Grid item xs={12} md={3}>
+              <Card sx={{ backgroundColor: '#f5f5f5', boxShadow: 1, border: '1px solid #e0e0e0' }}>
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                      <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Shipping Costs</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif', color: '#ed6c02' }}>
+                        {formatCurrency(logisticsTransactions.filter(t => t.logistics_category === 'Transportation').reduce((sum, t) => sum + (t.amount || 0), 0))}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>Shipments: {logisticsTransactions.filter(t => t.logistics_category === 'Transportation').length}</Typography>
+                    </Box>
+                    <Business sx={{ fontSize: 28, color: '#ed6c02' }} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            {/* Logistics Profit Card */}
+            <Grid item xs={12} md={3}>
+              <Card sx={{ backgroundColor: '#f5f5f5', boxShadow: 1, border: '1px solid #e0e0e0' }}>
+                <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                      <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Logistics Profit</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif', color: '#2e7d32' }}>
+                        {formatCurrency(logisticsTransactions.filter(t => t.transaction_type === 'Outbound Shipment').reduce((sum, t) => sum + (t.amount || 0), 0) - logisticsTransactions.filter(t => t.transaction_type === 'Freight Payment').reduce((sum, t) => sum + (t.amount || 0), 0))}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>Margin: 15.2%</Typography>
+                    </Box>
+                    <MonetizationOn sx={{ fontSize: 28, color: '#2e7d32' }} />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+          
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              <Typography variant="subtitle1" gutterBottom sx={{ fontFamily: 'Nunito, sans-serif' }}>Logistics Transactions</Typography>
+              <TableContainer sx={tableContainerStyle}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={tableHeaderStyle}>Transaction</TableCell>
+                      <TableCell sx={tableHeaderStyle}>Type</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Amount</TableCell>
+                      <TableCell sx={tableHeaderStyle}>Category</TableCell>
+                      <TableCell sx={tableHeaderStyle}>Status</TableCell>
+                      <TableCell sx={tableHeaderStyle}>Date</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {logisticsTransactions.slice(0, 10).map((transaction, index) => (
+                      <TableRow key={index} hover>
+                        <TableCell>{transaction.transaction_name || 'N/A'}</TableCell>
+                        <TableCell>{transaction.transaction_type || 'N/A'}</TableCell>
+                        <TableCell align="right">{formatCurrency(transaction.amount || 0)}</TableCell>
+                        <TableCell>{transaction.logistics_category || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={transaction.status || 'Pending'} 
+                            color={transaction.status === 'Completed' ? 'success' : 'default'} 
+                            size="small" 
+                          />
+                        </TableCell>
+                        <TableCell>{transaction.transaction_date ? new Date(transaction.transaction_date).toLocaleDateString() : 'N/A'}</TableCell>
+                      </TableRow>
+                    ))}
+                    {logisticsTransactions.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center">No logistics transactions found</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Typography variant="subtitle1" gutterBottom sx={{ fontFamily: 'Nunito, sans-serif' }}>Fleet Performance</Typography>
+              <Card variant="outlined" sx={{ mb: 2, backgroundColor: '#f5f5f5' }}>
+                <CardContent>
+                  <List dense>
+                    <ListItem>
+                      <ListItemIcon><LocalShipping /></ListItemIcon>
+                      <ListItemText 
+                        primary="Active Vehicles" 
+                        secondary={vehiclesData.filter(v => v.status === 'active').length}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><MonetizationOn /></ListItemIcon>
+                      <ListItemText 
+                        primary="Average Trip Revenue" 
+                        secondary={formatCurrency(250)}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><Receipt /></ListItemIcon>
+                      <ListItemText 
+                        primary="Fuel Cost per Trip" 
+                        secondary={formatCurrency(85)}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><Assessment /></ListItemIcon>
+                      <ListItemText 
+                        primary="Fleet ROI" 
+                        secondary="18.5%"
+                      />
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+              
+              <Typography variant="subtitle1" gutterBottom sx={{ fontFamily: 'Nunito, sans-serif' }}>Cost Breakdown</Typography>
+              <Card variant="outlined" sx={{ backgroundColor: '#f5f5f5' }}>
+                <CardContent>
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="body2">Fuel Costs</Typography>
+                    <LinearProgress variant="determinate" value={45} sx={{ mt: 0.5, height: 6, borderRadius: 3 }} />
+                    <Typography variant="caption">45% - {formatCurrency(450)}</Typography>
+                  </Box>
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="body2">Maintenance</Typography>
+                    <LinearProgress variant="determinate" value={25} sx={{ mt: 0.5, height: 6, borderRadius: 3 }} />
+                    <Typography variant="caption">25% - {formatCurrency(250)}</Typography>
+                  </Box>
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="body2">Insurance</Typography>
+                    <LinearProgress variant="determinate" value={20} sx={{ mt: 0.5, height: 6, borderRadius: 3 }} />
+                    <Typography variant="caption">20% - {formatCurrency(200)}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2">Other Costs</Typography>
+                    <LinearProgress variant="determinate" value={10} sx={{ mt: 0.5, height: 6, borderRadius: 3 }} />
+                    <Typography variant="caption">10% - {formatCurrency(100)}</Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </TabPanel>
+        
+        {/* Operations Tab */}
+        <TabPanel value={activeTab} index={6}>
           <Typography variant="h6" gutterBottom>Operational Financial Data</Typography>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
@@ -911,7 +1103,7 @@ const FinancePage = () => {
         </TabPanel>
 
         {/* Reports Tab */}
-        <TabPanel value={activeTab} index={6}>
+        <TabPanel value={activeTab} index={7}>
           <Typography variant="h6" gutterBottom>Financial Reports & Analytics</Typography>
           <Grid container spacing={3}>
             <Grid item xs={12}>
