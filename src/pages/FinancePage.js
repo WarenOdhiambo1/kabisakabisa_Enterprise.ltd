@@ -14,7 +14,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Tabs,
   Tab,
   LinearProgress,
@@ -28,9 +27,6 @@ import {
   FormControl,
   InputLabel,
   Select,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Chip,
   Alert
 } from '@mui/material';
@@ -42,7 +38,6 @@ import {
   Receipt,
   Payment,
   Business,
-  PieChart,
   BarChart,
   Timeline,
   Download,
@@ -51,16 +46,14 @@ import {
   MoreVert,
   Add,
   Refresh,
-  ExpandMore,
   Inventory,
   People,
   LocalShipping,
-  ShoppingCart,
   MonetizationOn,
   AccountBalanceWallet
 } from '@mui/icons-material';
 import { useQuery } from 'react-query';
-import { salesAPI, expensesAPI, branchesAPI, ordersAPI, stockAPI, hrAPI, logisticsAPI, genericDataAPI } from '../services/api';
+import { salesAPI, expensesAPI, branchesAPI, ordersAPI, stockAPI, hrAPI, logisticsAPI } from '../services/api';
 import { formatCurrency } from '../theme';
 
 const FinancePage = () => {
@@ -120,7 +113,7 @@ const FinancePage = () => {
   const totalRevenue = salesData.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
   const totalExpenses = expensesData.reduce((sum, expense) => sum + (expense.amount || 0), 0);
   const totalPayroll = payrollData.reduce((sum, payroll) => sum + (payroll.net_pay || 0), 0);
-  const totalOrderValue = ordersData.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+
   const pendingPayments = ordersData.reduce((sum, order) => sum + (order.balance_remaining || 0), 0);
   const stockValue = stockData.reduce((sum, stock) => sum + ((stock.quantity_available || 0) * (stock.unit_price || 0)), 0);
   const netProfit = totalRevenue - totalExpenses - totalPayroll;
