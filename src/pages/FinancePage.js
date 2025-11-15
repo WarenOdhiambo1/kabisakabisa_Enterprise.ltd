@@ -112,6 +112,14 @@ const FinancePage = () => {
     ['logisticsTransactions', dateRange],
     () => logisticsTransactionsAPI.getAll(dateRange).catch(() => [])
   );
+  const { data: tripsData = [] } = useQuery(
+    ['tripsData', dateRange],
+    () => logisticsAPI.getTrips(dateRange).catch(() => [])
+  );
+  const { data: maintenanceData = [] } = useQuery(
+    ['maintenanceData'],
+    () => logisticsAPI.getAllMaintenance().catch(() => [])
+  );
 
   // Comprehensive financial calculations
   const totalRevenue = salesData.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
@@ -305,7 +313,7 @@ const FinancePage = () => {
       </Box>
 
       {/* Enhanced Filters */}
-      <Card sx={{ mb: 3, p: 1.5, backgroundColor: '#f5f5f5', boxShadow: 1 }}>
+      <Card sx={{ mb: 3, p: 1.5, backgroundColor: '#f6f4d2', boxShadow: 1 }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={6} md={2}>
             <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>Filters:</Typography>
@@ -365,7 +373,7 @@ const FinancePage = () => {
       {/* Comprehensive Financial Metrics */}
       <Grid container spacing={1.5} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ backgroundColor: '#f5f5f5', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
+          <Card sx={{ backgroundColor: '#f6f4d2', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
             <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
@@ -384,7 +392,7 @@ const FinancePage = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ backgroundColor: '#f5f5f5', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
+          <Card sx={{ backgroundColor: '#ffe5d9', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
             <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
@@ -403,7 +411,7 @@ const FinancePage = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ backgroundColor: '#f5f5f5', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
+          <Card sx={{ backgroundColor: '#f6f4d2', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
             <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
@@ -422,7 +430,7 @@ const FinancePage = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ backgroundColor: '#f5f5f5', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
+          <Card sx={{ backgroundColor: '#ffe5d9', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
             <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
@@ -441,15 +449,15 @@ const FinancePage = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ backgroundColor: '#f5f5f5', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
+          <Card sx={{ backgroundColor: '#f6f4d2', color: '#333', height: 'auto', boxShadow: 1, border: '1px solid #e0e0e0' }}>
             <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
-                  <Typography variant="body2" sx={{ opacity: 0.8, fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Net Profit</Typography>
+                  <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Net Profit</Typography>
                   <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, color: netProfit >= 0 ? 'green' : 'red', fontFamily: 'Nunito, sans-serif' }}>
                     {formatCurrency(netProfit)}
                   </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5, opacity: 0.8, fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>
+                  <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>
                     Margin: {profitMargin.toFixed(1)}%
                   </Typography>
                 </Box>
@@ -859,15 +867,15 @@ const FinancePage = () => {
           <Grid container spacing={2} sx={{ mb: 3 }}>
             {/* Transportation Revenue Card */}
             <Grid item xs={12} md={3}>
-              <Card sx={{ backgroundColor: '#f5f5f5', boxShadow: 1, border: '1px solid #e0e0e0' }}>
+              <Card sx={{ backgroundColor: '#f6f4d2', boxShadow: 1, border: '1px solid #e0e0e0' }}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box>
                       <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Transportation Revenue</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif', color: '#1976d2' }}>
-                        {formatCurrency(logisticsTransactions.filter(t => t.transaction_type === 'Outbound Shipment').reduce((sum, t) => sum + (t.amount || 0), 0))}
+                        {formatCurrency(tripsData.reduce((sum, t) => sum + (t.amount_charged || 0), 0))}
                       </Typography>
-                      <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>Trips: {logisticsTransactions.filter(t => t.transaction_type === 'Outbound Shipment').length}</Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>Trips: {tripsData.length}</Typography>
                     </Box>
                     <LocalShipping sx={{ fontSize: 28, color: '#1976d2' }} />
                   </Box>
@@ -877,13 +885,13 @@ const FinancePage = () => {
             
             {/* Fleet Operating Costs Card */}
             <Grid item xs={12} md={3}>
-              <Card sx={{ backgroundColor: '#f5f5f5', boxShadow: 1, border: '1px solid #e0e0e0' }}>
+              <Card sx={{ backgroundColor: '#ffe5d9', boxShadow: 1, border: '1px solid #e0e0e0' }}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box>
                       <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Fleet Operating Costs</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif', color: '#d32f2f' }}>
-                        {formatCurrency(logisticsTransactions.filter(t => t.transaction_type === 'Freight Payment').reduce((sum, t) => sum + (t.amount || 0), 0))}
+                        {formatCurrency(tripsData.reduce((sum, t) => sum + (t.fuel_cost || 0), 0) + maintenanceData.reduce((sum, m) => sum + (m.cost || 0), 0))}
                       </Typography>
                       <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>Vehicles: {vehiclesData.length}</Typography>
                     </Box>
@@ -895,15 +903,15 @@ const FinancePage = () => {
             
             {/* Shipping Costs Card */}
             <Grid item xs={12} md={3}>
-              <Card sx={{ backgroundColor: '#f5f5f5', boxShadow: 1, border: '1px solid #e0e0e0' }}>
+              <Card sx={{ backgroundColor: '#f6f4d2', boxShadow: 1, border: '1px solid #e0e0e0' }}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box>
-                      <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Shipping Costs</Typography>
+                      <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Maintenance Costs</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif', color: '#ed6c02' }}>
-                        {formatCurrency(logisticsTransactions.filter(t => t.logistics_category === 'Transportation').reduce((sum, t) => sum + (t.amount || 0), 0))}
+                        {formatCurrency(maintenanceData.reduce((sum, m) => sum + (m.cost || 0), 0))}
                       </Typography>
-                      <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>Shipments: {logisticsTransactions.filter(t => t.logistics_category === 'Transportation').length}</Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>Services: {maintenanceData.length}</Typography>
                     </Box>
                     <Business sx={{ fontSize: 28, color: '#ed6c02' }} />
                   </Box>
@@ -913,15 +921,15 @@ const FinancePage = () => {
             
             {/* Logistics Profit Card */}
             <Grid item xs={12} md={3}>
-              <Card sx={{ backgroundColor: '#f5f5f5', boxShadow: 1, border: '1px solid #e0e0e0' }}>
+              <Card sx={{ backgroundColor: '#ffe5d9', boxShadow: 1, border: '1px solid #e0e0e0' }}>
                 <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box>
                       <Typography variant="body2" sx={{ color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.75rem' }}>Logistics Profit</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5, fontFamily: 'Nunito, sans-serif', color: '#2e7d32' }}>
-                        {formatCurrency(logisticsTransactions.filter(t => t.transaction_type === 'Outbound Shipment').reduce((sum, t) => sum + (t.amount || 0), 0) - logisticsTransactions.filter(t => t.transaction_type === 'Freight Payment').reduce((sum, t) => sum + (t.amount || 0), 0))}
+                        {formatCurrency(tripsData.reduce((sum, t) => sum + (t.profit || 0), 0))}
                       </Typography>
-                      <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>Margin: 15.2%</Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, color: '#666', fontFamily: 'Nunito, sans-serif', fontSize: '0.7rem' }}>Avg Margin: {tripsData.length > 0 ? ((tripsData.reduce((sum, t) => sum + (t.profit || 0), 0) / tripsData.reduce((sum, t) => sum + (t.amount_charged || 1), 1)) * 100).toFixed(1) : 0}%</Typography>
                     </Box>
                     <MonetizationOn sx={{ fontSize: 28, color: '#2e7d32' }} />
                   </Box>
@@ -946,25 +954,31 @@ const FinancePage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {logisticsTransactions.slice(0, 10).map((transaction, index) => (
-                      <TableRow key={index} hover>
-                        <TableCell>{transaction.transaction_name || 'N/A'}</TableCell>
-                        <TableCell>{transaction.transaction_type || 'N/A'}</TableCell>
-                        <TableCell align="right">{formatCurrency(transaction.amount || 0)}</TableCell>
-                        <TableCell>{transaction.logistics_category || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={transaction.status || 'Pending'} 
-                            color={transaction.status === 'Completed' ? 'success' : 'default'} 
-                            size="small" 
-                          />
-                        </TableCell>
-                        <TableCell>{transaction.transaction_date ? new Date(transaction.transaction_date).toLocaleDateString() : 'N/A'}</TableCell>
+                    {/* Trips Data */}
+                    {tripsData.slice(0, 5).map((trip, index) => (
+                      <TableRow key={`trip-${index}`} hover>
+                        <TableCell>Trip to {trip.destination}</TableCell>
+                        <TableCell>Transportation</TableCell>
+                        <TableCell align="right">{formatCurrency(trip.amount_charged || 0)}</TableCell>
+                        <TableCell>Revenue</TableCell>
+                        <TableCell><Chip label="Completed" color="success" size="small" /></TableCell>
+                        <TableCell>{trip.trip_date ? new Date(trip.trip_date).toLocaleDateString() : 'N/A'}</TableCell>
                       </TableRow>
                     ))}
-                    {logisticsTransactions.length === 0 && (
+                    {/* Maintenance Data */}
+                    {maintenanceData.slice(0, 5).map((maintenance, index) => (
+                      <TableRow key={`maintenance-${index}`} hover>
+                        <TableCell>{maintenance.maintenance_type} - {maintenance.vehicle_id}</TableCell>
+                        <TableCell>Maintenance</TableCell>
+                        <TableCell align="right">{formatCurrency(maintenance.cost || 0)}</TableCell>
+                        <TableCell>Expense</TableCell>
+                        <TableCell><Chip label="Completed" color="success" size="small" /></TableCell>
+                        <TableCell>{maintenance.maintenance_date ? new Date(maintenance.maintenance_date).toLocaleDateString() : 'N/A'}</TableCell>
+                      </TableRow>
+                    ))}
+                    {tripsData.length === 0 && maintenanceData.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} align="center">No logistics transactions found</TableCell>
+                        <TableCell colSpan={6} align="center">No logistics data found</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -973,7 +987,7 @@ const FinancePage = () => {
             </Grid>
             <Grid item xs={12} md={4}>
               <Typography variant="subtitle1" gutterBottom sx={{ fontFamily: 'Nunito, sans-serif' }}>Fleet Performance</Typography>
-              <Card variant="outlined" sx={{ mb: 2, backgroundColor: '#f5f5f5' }}>
+              <Card variant="outlined" sx={{ mb: 2, backgroundColor: '#f6f4d2' }}>
                 <CardContent>
                   <List dense>
                     <ListItem>
@@ -987,21 +1001,21 @@ const FinancePage = () => {
                       <ListItemIcon><MonetizationOn /></ListItemIcon>
                       <ListItemText 
                         primary="Average Trip Revenue" 
-                        secondary={formatCurrency(250)}
+                        secondary={formatCurrency(tripsData.length > 0 ? tripsData.reduce((sum, t) => sum + (t.amount_charged || 0), 0) / tripsData.length : 0)}
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemIcon><Receipt /></ListItemIcon>
                       <ListItemText 
-                        primary="Fuel Cost per Trip" 
-                        secondary={formatCurrency(85)}
+                        primary="Average Fuel Cost" 
+                        secondary={formatCurrency(tripsData.length > 0 ? tripsData.reduce((sum, t) => sum + (t.fuel_cost || 0), 0) / tripsData.length : 0)}
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemIcon><Assessment /></ListItemIcon>
                       <ListItemText 
-                        primary="Fleet ROI" 
-                        secondary="18.5%"
+                        primary="Average Profit Margin" 
+                        secondary={`${tripsData.length > 0 ? ((tripsData.reduce((sum, t) => sum + (t.profit || 0), 0) / tripsData.reduce((sum, t) => sum + (t.amount_charged || 1), 1)) * 100).toFixed(1) : 0}%`}
                       />
                     </ListItem>
                   </List>
@@ -1009,27 +1023,27 @@ const FinancePage = () => {
               </Card>
               
               <Typography variant="subtitle1" gutterBottom sx={{ fontFamily: 'Nunito, sans-serif' }}>Cost Breakdown</Typography>
-              <Card variant="outlined" sx={{ backgroundColor: '#f5f5f5' }}>
+              <Card variant="outlined" sx={{ backgroundColor: '#ffe5d9' }}>
                 <CardContent>
                   <Box sx={{ mb: 1 }}>
                     <Typography variant="body2">Fuel Costs</Typography>
-                    <LinearProgress variant="determinate" value={45} sx={{ mt: 0.5, height: 6, borderRadius: 3 }} />
-                    <Typography variant="caption">45% - {formatCurrency(450)}</Typography>
+                    <LinearProgress variant="determinate" value={60} sx={{ mt: 0.5, height: 6, borderRadius: 3 }} />
+                    <Typography variant="caption">60% - {formatCurrency(tripsData.reduce((sum, t) => sum + (t.fuel_cost || 0), 0))}</Typography>
                   </Box>
                   <Box sx={{ mb: 1 }}>
                     <Typography variant="body2">Maintenance</Typography>
-                    <LinearProgress variant="determinate" value={25} sx={{ mt: 0.5, height: 6, borderRadius: 3 }} />
-                    <Typography variant="caption">25% - {formatCurrency(250)}</Typography>
+                    <LinearProgress variant="determinate" value={30} sx={{ mt: 0.5, height: 6, borderRadius: 3 }} />
+                    <Typography variant="caption">30% - {formatCurrency(maintenanceData.reduce((sum, m) => sum + (m.cost || 0), 0))}</Typography>
                   </Box>
                   <Box sx={{ mb: 1 }}>
-                    <Typography variant="body2">Insurance</Typography>
-                    <LinearProgress variant="determinate" value={20} sx={{ mt: 0.5, height: 6, borderRadius: 3 }} />
-                    <Typography variant="caption">20% - {formatCurrency(200)}</Typography>
+                    <Typography variant="body2">Vehicle Expenses</Typography>
+                    <LinearProgress variant="determinate" value={8} sx={{ mt: 0.5, height: 6, borderRadius: 3 }} />
+                    <Typography variant="caption">8% - {formatCurrency(expensesData.filter(e => e.category === 'vehicle_related').reduce((sum, e) => sum + (e.amount || 0), 0))}</Typography>
                   </Box>
                   <Box>
                     <Typography variant="body2">Other Costs</Typography>
-                    <LinearProgress variant="determinate" value={10} sx={{ mt: 0.5, height: 6, borderRadius: 3 }} />
-                    <Typography variant="caption">10% - {formatCurrency(100)}</Typography>
+                    <LinearProgress variant="determinate" value={2} sx={{ mt: 0.5, height: 6, borderRadius: 3 }} />
+                    <Typography variant="caption">2% - {formatCurrency(50)}</Typography>
                   </Box>
                 </CardContent>
               </Card>
