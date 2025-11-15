@@ -867,7 +867,7 @@ const AdminPage = () => {
             )}
             {(['hr', 'admin', 'boss'].includes(user?.role)) && !editingUser && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1, p: 1, bgcolor: 'info.light', borderRadius: 1 }}>
-                ℹ️ {user?.role === 'admin' || user?.role === 'boss' ? 'Admin can create users with passwords.' : 'HR can create employee records. Admin will set the password later.'}
+                {user?.role === 'admin' || user?.role === 'boss' ? 'Admin can create users with passwords.' : 'HR can create employee records. Admin will set the password later.'}
               </Typography>
             )}
             <TextField

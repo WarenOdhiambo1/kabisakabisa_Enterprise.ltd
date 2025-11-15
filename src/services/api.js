@@ -99,7 +99,10 @@ export const stockAPI = {
   transfer: (data) => api.post('/stock/transfer', data).then(res => res.data),
   getPendingTransfers: (branchId) => api.get(`/stock/transfers/pending/${branchId}`).then(res => res.data),
   approveTransfer: (transferId) => api.put(`/stock/transfers/${transferId}/approve`).then(res => res.data),
-  rejectTransfer: (transferId) => api.put(`/stock/transfers/${transferId}/reject`).then(res => res.data),
+  rejectTransfer: (transferId, data) => api.put(`/stock/transfers/${transferId}/reject`, data).then(res => res.data),
+  getTransferReceipt: (transferId) => api.get(`/stock/transfers/${transferId}/receipt`).then(res => res.data),
+  getAllTransfers: (params) => api.get('/stock/transfers', { params }).then(res => res.data),
+  getMovements: (branchId, params) => api.get(`/stock/movements/${branchId}`, { params }).then(res => res.data),
   updateStock: (stockId, data) => api.put(`/stock/${stockId}`, data).then(res => res.data),
   deleteStock: (stockId) => api.delete(`/stock/${stockId}`).then(res => res.data),
 };
@@ -143,6 +146,7 @@ export const ordersAPI = {
   },
   markDelivered: (id, data) => api.post(`/orders/${id}/delivery`, data).then(res => res.data),
   completeOrder: (id, data) => api.post(`/orders/${id}/complete`, data).then(res => res.data),
+  getReceipts: (id) => api.get(`/orders/${id}/receipts`).then(res => res.data),
 };
 
 // HR API
@@ -277,8 +281,10 @@ export const stockAPIEnhanced = {
 
 // Update stockAPI to include missing methods using dedicated routes
 stockAPI.getPendingTransfers = (branchId) => api.get(`/stock/transfers/pending/${branchId}`).then(res => res.data);
-stockAPI.approveTransfer = (transferId) => api.patch(`/stock/transfers/${transferId}/approve`).then(res => res.data);
-stockAPI.rejectTransfer = (transferId) => api.patch(`/stock/transfers/${transferId}/reject`).then(res => res.data);
+stockAPI.approveTransfer = (transferId) => api.put(`/stock/transfers/${transferId}/approve`).then(res => res.data);
+stockAPI.rejectTransfer = (transferId, data) => api.put(`/stock/transfers/${transferId}/reject`, data).then(res => res.data);
+stockAPI.getTransferReceipt = (transferId) => api.get(`/stock/transfers/${transferId}/receipt`).then(res => res.data);
+stockAPI.getAllTransfers = (params) => api.get('/stock/transfers', { params }).then(res => res.data);
 
 // Finance API
 export const financeAPI = {

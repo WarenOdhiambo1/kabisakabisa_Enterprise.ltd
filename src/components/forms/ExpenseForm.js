@@ -1,19 +1,32 @@
 import React from 'react';
 import { TextField, Grid, FormControl, InputLabel, Select, MenuItem, Box } from '@mui/material';
+import { 
+  LocalGasStation, 
+  Description, 
+  Lightbulb, 
+  Build, 
+  Campaign, 
+  Restaurant, 
+  Flight, 
+  Business, 
+  Security, 
+  Work, 
+  Assignment 
+} from '@mui/icons-material';
 
 const ExpenseForm = ({ register, watch, vehicles, branches }) => {
   const categories = [
-    { value: 'fuel', label: 'Fuel & Transportation', icon: '⛽' },
-    { value: 'office_supplies', label: 'Office Supplies', icon: '📝' },
-    { value: 'utilities', label: 'Utilities (Phone, Internet)', icon: '💡' },
-    { value: 'maintenance', label: 'Equipment Maintenance', icon: '🔧' },
-    { value: 'marketing', label: 'Marketing & Advertising', icon: '📢' },
-    { value: 'meals', label: 'Business Meals', icon: '🍽️' },
-    { value: 'travel', label: 'Travel Expenses', icon: '✈️' },
-    { value: 'rent', label: 'Rent & Facilities', icon: '🏢' },
-    { value: 'insurance', label: 'Insurance', icon: '🛡️' },
-    { value: 'professional_services', label: 'Professional Services', icon: '👔' },
-    { value: 'other', label: 'Other Business Expenses', icon: '📋' }
+    { value: 'fuel', label: 'Fuel & Transportation', icon: <LocalGasStation /> },
+    { value: 'office_supplies', label: 'Office Supplies', icon: <Description /> },
+    { value: 'utilities', label: 'Utilities (Phone, Internet)', icon: <Lightbulb /> },
+    { value: 'maintenance', label: 'Equipment Maintenance', icon: <Build /> },
+    { value: 'marketing', label: 'Marketing & Advertising', icon: <Campaign /> },
+    { value: 'meals', label: 'Business Meals', icon: <Restaurant /> },
+    { value: 'travel', label: 'Travel Expenses', icon: <Flight /> },
+    { value: 'rent', label: 'Rent & Facilities', icon: <Business /> },
+    { value: 'insurance', label: 'Insurance', icon: <Security /> },
+    { value: 'professional_services', label: 'Professional Services', icon: <Work /> },
+    { value: 'other', label: 'Other Business Expenses', icon: <Assignment /> }
   ];
 
   return (
@@ -38,7 +51,10 @@ const ExpenseForm = ({ register, watch, vehicles, branches }) => {
             >
               {categories.map((cat) => (
                 <MenuItem key={cat.value} value={cat.value}>
-                  {cat.icon} {cat.label}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {cat.icon}
+                    {cat.label}
+                  </Box>
                 </MenuItem>
               ))}
             </Select>

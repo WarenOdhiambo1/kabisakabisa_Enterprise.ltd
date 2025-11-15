@@ -230,12 +230,12 @@ const SalesPage = () => {
   );
 
   const expenseCategories = [
-    { value: 'fuel', label: 'Fuel', icon: '⛽' },
-    { value: 'utilities', label: 'Utilities', icon: '💡' },
-    { value: 'maintenance', label: 'Maintenance', icon: '🔧' },
-    { value: 'supplies', label: 'Office Supplies', icon: '📋' },
-    { value: 'transport', label: 'Transport', icon: '🚗' },
-    { value: 'other', label: 'Other', icon: '📝' }
+    { value: 'fuel', label: 'Fuel' },
+    { value: 'utilities', label: 'Utilities' },
+    { value: 'maintenance', label: 'Maintenance' },
+    { value: 'supplies', label: 'Office Supplies' },
+    { value: 'transport', label: 'Transport' },
+    { value: 'other', label: 'Other' }
   ];
 
 

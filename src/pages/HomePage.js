@@ -258,7 +258,7 @@ const HomePage = () => {
                       )}
                       {branch.manager && (
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, justifyContent: 'center' }}>
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '14px' } }}>👤 {branch.manager}</Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '14px' } }}>{branch.manager}</Typography>
                         </Box>
                       )}
                       {branch.status && (

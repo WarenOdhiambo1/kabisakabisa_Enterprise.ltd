@@ -28,7 +28,7 @@ import {
   Tabs,
   Tab
 } from '@mui/material';
-import { Add, Delete, Payment, LocalShipping, ShoppingCart, History } from '@mui/icons-material';
+import { Add, Delete, Payment, LocalShipping, ShoppingCart, History, Search } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { ordersAPI, branchesAPI, stockAPI } from '../services/api';
@@ -613,7 +613,7 @@ const OrdersPage = () => {
                       onClick={() => setShowProductSearch(true)}
                       sx={{ minWidth: 'auto', px: 1 }}
                     >
-                      🔍
+                      <Search />
                     </Button>
                   </Box>
                 </Grid>
@@ -687,7 +687,7 @@ const OrdersPage = () => {
             </Box>
             
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              ℹ️ You can assign products to branches later when completing the order.
+              You can assign products to branches later when completing the order.
             </Typography>
           </Box>
         </DialogContent>
@@ -936,7 +936,7 @@ const OrdersPage = () => {
               ) : (
                 <>
                   <Typography variant="body2" color="warning.main" sx={{ mt: 2, p: 2, bgcolor: 'warning.light', borderRadius: 1 }}>
-                    ⚠️ This order has no items. Please manually enter the item details below to complete the order.
+                    This order has no items. Please manually enter the item details below to complete the order.
                   </Typography>
                   
                   <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
@@ -991,7 +991,7 @@ const OrdersPage = () => {
               )}
               
               <Typography variant="body2" color="warning.main" sx={{ mt: 2 }}>
-                ⚠️ This action will:
+                This action will:
                 <br />• Mark the order as completed
                 <br />• Add all items to the selected branch stock
                 <br />• Create stock movement records

@@ -86,7 +86,7 @@ const Navbar = () => {
   const canAccessAdmin = user?.role === 'admin';
 
   return (
-    <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: 'transparent', color: 'black', boxShadow: 'none', border: 'none' }}>
+    <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: '#f5f5f5', color: 'black', boxShadow: 'none', border: 'none' }}>
       <Toolbar>
         <Typography 
           variant="h6" 

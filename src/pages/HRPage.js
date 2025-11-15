@@ -218,10 +218,10 @@ const HRPage = () => {
         const errorCount = response.results?.filter(r => r.status === 'error').length || 0;
         
         if (successCount > 0) {
-          toast.success(`📱 ${successCount} payslips sent via WhatsApp successfully!`);
+          toast.success(`${successCount} payslips sent via WhatsApp successfully!`);
         }
         if (errorCount > 0) {
-          toast.error(`⚠️ ${errorCount} payslips failed to send. Check employee phone numbers.`);
+          toast.error(`${errorCount} payslips failed to send. Check employee phone numbers.`);
         }
         
         queryClient.invalidateQueries('payroll');
@@ -831,14 +831,14 @@ const HRPage = () => {
                       }
                       
                       sendPayslipsMutation.mutate(selectedPayrollIds);
-                      toast.info(`📱 Sending ${selectedPayrollIds.length} payslips via WhatsApp...`);
+                      toast.info(`Sending ${selectedPayrollIds.length} payslips via WhatsApp...`);
                     } else {
                       const pendingIds = payroll
                         .filter(p => p.payment_status === 'pending')
                         .map(p => p.id);
                       if (pendingIds.length > 0) {
                         sendPayslipsMutation.mutate(pendingIds);
-                        toast.info(`📱 Sending ${pendingIds.length} pending payslips via WhatsApp...`);
+                        toast.info(`Sending ${pendingIds.length} pending payslips via WhatsApp...`);
                       } else {
                         toast.info('No pending payroll to send');
                       }
@@ -847,7 +847,7 @@ const HRPage = () => {
                   disabled={sendPayslipsMutation.isLoading}
                   sx={{ bgcolor: '#4caf50', '&:hover': { bgcolor: '#45a049' } }}
                 >
-                  📱 Send {selectedPayrollIds.length > 0 ? `Selected (${selectedPayrollIds.length})` : `All Pending (${pendingPayroll})`} via WhatsApp
+                  Send {selectedPayrollIds.length > 0 ? `Selected (${selectedPayrollIds.length})` : `All Pending (${pendingPayroll})`} via WhatsApp
                 </Button>
               </Box>
             </Box>
@@ -977,14 +977,14 @@ const HRPage = () => {
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             {record.payslip_sent ? (
                               <Chip 
-                                label="📱 SENT"
+                                label="SENT"
                                 color="success"
                                 size="small"
                                 title={`Sent on ${record.payslip_sent_date ? new Date(record.payslip_sent_date).toLocaleDateString() : 'Unknown'}`}
                               />
                             ) : record.employee_phone && record.employee_phone.trim() !== '' ? (
                               <Chip 
-                                label="📱 READY"
+                                label="READY"
                                 color="info"
                                 size="small"
                                 title={`Phone: ${record.employee_phone}`}

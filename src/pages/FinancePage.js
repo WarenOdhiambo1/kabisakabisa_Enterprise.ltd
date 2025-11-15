@@ -24,7 +24,15 @@ import {
   ListItemIcon,
   IconButton,
   Menu,
-  MenuItem
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Chip,
+  Alert
 } from '@mui/material';
 import {
   TrendingUp,
@@ -42,10 +50,17 @@ import {
   Share,
   MoreVert,
   Add,
-  Refresh
-} from '@mui/icons-material';
+  Refresh,
+  ExpandMore,
+  Inventory,
+  People,
+  LocalShipping,
+  ShoppingCart,
+  MonetizationOn,
+  AccountBalanceWallet
+} from '@mui/material';
 import { useQuery } from 'react-query';
-import { salesAPI, expensesAPI, branchesAPI, ordersAPI } from '../services/api';
+import { salesAPI, expensesAPI, branchesAPI, ordersAPI, stockAPI, hrAPI, logisticsAPI, genericDataAPI } from '../services/api';
 import { formatCurrency } from '../theme';
 
 const FinancePage = () => {
@@ -55,14 +70,21 @@ const FinancePage = () => {
     endDate: new Date().toISOString().split('T')[0]
   });
   const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedBranch, setSelectedBranch] = useState('all');
 
-  // Data queries
+  // Comprehensive data queries for all tables
   const { data: branches = [] } = useQuery('branches', () => branchesAPI.getAll());
   const { data: salesData = [], isLoading: salesLoading } = useQuery(
-    ['salesData', dateRange],
-    () => Promise.all(branches.map(branch => 
-      salesAPI.getByBranch(branch.id, dateRange).catch(() => [])
-    )).then(results => results.flat()),
+    ['salesData', dateRange, selectedBranch],
+    () => {
+      if (selectedBranch === 'all') {
+        return Promise.all(branches.map(branch => 
+          salesAPI.getByBranch(branch.id, dateRange).catch(() => [])
+        )).then(results => results.flat());
+      } else {
+        return salesAPI.getByBranch(selectedBranch, dateRange);
+      }
+    },
     { enabled: branches.length > 0 }
   );
   const { data: expensesData = [] } = useQuery(
@@ -73,16 +95,41 @@ const FinancePage = () => {
     ['ordersData'],
     () => ordersAPI.getAll().catch(() => [])
   );
+  const { data: stockData = [] } = useQuery(
+    ['stockData'],
+    () => stockAPI.getAll().catch(() => [])
+  );
+  const { data: employeesData = [] } = useQuery(
+    ['employeesData'],
+    () => hrAPI.getEmployees().catch(() => [])
+  );
+  const { data: payrollData = [] } = useQuery(
+    ['payrollData', dateRange],
+    () => hrAPI.getPayroll(dateRange).catch(() => [])
+  );
+  const { data: vehiclesData = [] } = useQuery(
+    ['vehiclesData'],
+    () => logisticsAPI.getVehicles().catch(() => [])
+  );
+  const { data: stockMovements = [] } = useQuery(
+    ['stockMovements', dateRange],
+    () => stockAPI.getMovements('all', dateRange).catch(() => [])
+  );
 
-  // Financial calculations
+  // Comprehensive financial calculations
   const totalRevenue = salesData.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
   const totalExpenses = expensesData.reduce((sum, expense) => sum + (expense.amount || 0), 0);
-  const netProfit = totalRevenue - totalExpenses;
-  const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100) : 0;
-  const totalOrders = ordersData.length;
+  const totalPayroll = payrollData.reduce((sum, payroll) => sum + (payroll.net_pay || 0), 0);
+  const totalOrderValue = ordersData.reduce((sum, order) => sum + (order.total_amount || 0), 0);
   const pendingPayments = ordersData.reduce((sum, order) => sum + (order.balance_remaining || 0), 0);
+  const stockValue = stockData.reduce((sum, stock) => sum + ((stock.quantity_available || 0) * (stock.unit_price || 0)), 0);
+  const netProfit = totalRevenue - totalExpenses - totalPayroll;
+  const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100) : 0;
+  const totalAssets = stockValue + (totalRevenue - totalExpenses);
+  const totalLiabilities = pendingPayments + totalPayroll;
+  const equity = totalAssets - totalLiabilities;
 
-  // Cash flow data (last 6 months)
+  // Enhanced cash flow data with all financial streams
   const cashFlowData = Array.from({ length: 6 }, (_, i) => {
     const date = new Date();
     date.setMonth(date.getMonth() - i);
@@ -96,32 +143,78 @@ const FinancePage = () => {
       .filter(expense => expense.expense_date?.startsWith(monthStr))
       .reduce((sum, expense) => sum + (expense.amount || 0), 0);
     
+    const monthPayroll = payrollData
+      .filter(payroll => payroll.pay_date?.startsWith(monthStr))
+      .reduce((sum, payroll) => sum + (payroll.net_pay || 0), 0);
+    
+    const monthOrders = ordersData
+      .filter(order => order.order_date?.startsWith(monthStr))
+      .reduce((sum, order) => sum + (order.total_amount || 0), 0);
+    
     return {
       month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
       revenue: monthRevenue,
       expenses: monthExpenses,
-      profit: monthRevenue - monthExpenses
+      payroll: monthPayroll,
+      orders: monthOrders,
+      profit: monthRevenue - monthExpenses - monthPayroll
     };
   }).reverse();
 
-  // Top expenses
-  const topExpenses = expensesData
-    .sort((a, b) => (b.amount || 0) - (a.amount || 0))
-    .slice(0, 5);
+  // Financial analysis by category
+  const expensesByCategory = expensesData.reduce((acc, expense) => {
+    const category = expense.category || 'Other';
+    if (!acc[category]) acc[category] = { total: 0, count: 0, items: [] };
+    acc[category].total += expense.amount || 0;
+    acc[category].count += 1;
+    acc[category].items.push(expense);
+    return acc;
+  }, {});
 
-  // Branch performance
-  const branchPerformance = branches.map(branch => {
+  // Branch financial performance
+  const branchFinancials = branches.map(branch => {
     const branchSales = salesData.filter(sale => 
       sale.branch_id === branch.id || (Array.isArray(sale.branch_id) && sale.branch_id.includes(branch.id))
     );
+    const branchStock = stockData.filter(stock => 
+      stock.branch_id && stock.branch_id.includes(branch.id)
+    );
+    const branchEmployees = employeesData.filter(emp => 
+      emp.branch_id && emp.branch_id.includes(branch.id)
+    );
+    
     const revenue = branchSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
+    const stockValue = branchStock.reduce((sum, stock) => sum + ((stock.quantity_available || 0) * (stock.unit_price || 0)), 0);
+    const employeeCost = branchEmployees.reduce((sum, emp) => sum + (emp.salary || 0), 0);
+    
     return {
+      id: branch.id,
       name: branch.branch_name || branch.name,
       revenue,
+      stockValue,
+      employeeCost,
       salesCount: branchSales.length,
+      stockItems: branchStock.length,
+      employeeCount: branchEmployees.length,
+      profitability: revenue - employeeCost,
       percentage: totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0
     };
   }).sort((a, b) => b.revenue - a.revenue);
+
+  // Asset breakdown
+  const assetBreakdown = {
+    inventory: stockValue,
+    cash: totalRevenue - totalExpenses,
+    receivables: pendingPayments,
+    equipment: vehiclesData.reduce((sum, vehicle) => sum + (vehicle.purchase_price || 0), 0)
+  };
+
+  // Liability breakdown
+  const liabilityBreakdown = {
+    payroll: totalPayroll,
+    suppliers: pendingPayments,
+    expenses: totalExpenses
+  };
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -129,6 +222,34 @@ const FinancePage = () => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  // Financial ratios and KPIs
+  const financialRatios = {
+    currentRatio: totalAssets / (totalLiabilities || 1),
+    debtToEquity: totalLiabilities / (equity || 1),
+    returnOnAssets: (netProfit / (totalAssets || 1)) * 100,
+    inventoryTurnover: totalRevenue / (stockValue || 1),
+    grossMargin: ((totalRevenue - totalExpenses) / (totalRevenue || 1)) * 100
+  };
+
+  // Table styling for consistent appearance
+  const tableHeaderStyle = {
+    backgroundColor: '#f5f5f5',
+    color: '#000000',
+    fontWeight: 'bold',
+    borderBottom: '1px solid #e0e0e0'
+  };
+
+  const tableContainerStyle = {
+    border: '1px solid #e0e0e0',
+    '& .MuiTable-root': {
+      '& .MuiTableCell-root': {
+        borderBottom: '1px solid #e0e0e0'
+      }
+    },
+    maxHeight: { xs: 400, md: 600 },
+    overflowX: 'auto'
   };
 
   const TabPanel = ({ children, value, index }) => (
@@ -141,7 +262,7 @@ const FinancePage = () => {
     return (
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <Typography variant="h4">Financial Dashboard</Typography>
+          <Typography variant="h4">Financial Management System</Typography>
           <LinearProgress sx={{ flexGrow: 1, ml: 2 }} />
         </Box>
       </Container>
@@ -153,7 +274,7 @@ const FinancePage = () => {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-          Financial Dashboard
+          Financial Management System
         </Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button startIcon={<Add />} variant="contained" size="small">
@@ -179,142 +300,207 @@ const FinancePage = () => {
         </Box>
       </Box>
 
-      {/* Date Range Filter */}
+      {/* Enhanced Filters */}
       <Card sx={{ mb: 3, p: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>Period:</Typography>
-          <TextField
-            label="From"
-            type="date"
-            size="small"
-            value={dateRange.startDate}
-            onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            label="To"
-            type="date"
-            size="small"
-            value={dateRange.endDate}
-            onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-            InputLabelProps={{ shrink: true }}
-          />
-          <Button variant="outlined" size="small">Apply</Button>
-        </Box>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={6} md={2}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>Filters:</Typography>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <TextField
+              label="From"
+              type="date"
+              size="small"
+              fullWidth
+              value={dateRange.startDate}
+              onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <TextField
+              label="To"
+              type="date"
+              size="small"
+              fullWidth
+              value={dateRange.endDate}
+              onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControl size="small" fullWidth>
+              <InputLabel>Branch</InputLabel>
+              <Select
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value)}
+                label="Branch"
+              >
+                <MenuItem value="all">All Branches</MenuItem>
+                {branches.map(branch => (
+                  <MenuItem key={branch.id} value={branch.id}>
+                    {branch.branch_name || branch.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <Button variant="contained" size="small" fullWidth>
+              Generate Report
+            </Button>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <Button variant="outlined" size="small" fullWidth startIcon={<Download />}>
+              Export
+            </Button>
+          </Grid>
+        </Grid>
       </Card>
 
-      {/* Key Metrics Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+      {/* Comprehensive Financial Metrics */}
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', height: '100%' }}>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Total Revenue</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', mt: 1 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', mt: 1 }}>
                     {formatCurrency(totalRevenue)}
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
-                    +12.5% from last month
+                    Sales: {salesData.length}
                   </Typography>
                 </Box>
-                <TrendingUp sx={{ fontSize: 40, opacity: 0.8 }} />
+                <MonetizationOn sx={{ fontSize: 35, opacity: 0.8 }} />
               </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white', height: '100%' }}>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Total Expenses</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', mt: 1 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', mt: 1 }}>
                     {formatCurrency(totalExpenses)}
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
-                    -3.2% from last month
+                    Items: {expensesData.length}
                   </Typography>
                 </Box>
-                <TrendingDown sx={{ fontSize: 40, opacity: 0.8 }} />
+                <Receipt sx={{ fontSize: 35, opacity: 0.8 }} />
               </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white' }}>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card sx={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white', height: '100%' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Box>
+                  <Typography variant="body2" sx={{ opacity: 0.8 }}>Stock Value</Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', mt: 1 }}>
+                    {formatCurrency(stockValue)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
+                    Items: {stockData.length}
+                  </Typography>
+                </Box>
+                <Inventory sx={{ fontSize: 35, opacity: 0.8 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card sx={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: 'white', height: '100%' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Box>
+                  <Typography variant="body2" sx={{ opacity: 0.8 }}>Payroll Cost</Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', mt: 1 }}>
+                    {formatCurrency(totalPayroll)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
+                    Staff: {employeesData.length}
+                  </Typography>
+                </Box>
+                <People sx={{ fontSize: 35, opacity: 0.8 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card sx={{ background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', color: '#333', height: '100%' }}>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box>
                   <Typography variant="body2" sx={{ opacity: 0.8 }}>Net Profit</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', mt: 1 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', mt: 1, color: netProfit >= 0 ? 'green' : 'red' }}>
                     {formatCurrency(netProfit)}
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
                     Margin: {profitMargin.toFixed(1)}%
                   </Typography>
                 </Box>
-                <AccountBalance sx={{ fontSize: 40, opacity: 0.8 }} />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: 'white' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Box>
-                  <Typography variant="body2" sx={{ opacity: 0.8 }}>Pending Payments</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', mt: 1 }}>
-                    {formatCurrency(pendingPayments)}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: 1, opacity: 0.8 }}>
-                    {totalOrders} orders
-                  </Typography>
-                </Box>
-                <Payment sx={{ fontSize: 40, opacity: 0.8 }} />
+                <AccountBalanceWallet sx={{ fontSize: 35, opacity: 0.8 }} />
               </Box>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Tabs */}
+      {/* Enhanced Tabs */}
       <Card>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-            <Tab icon={<BarChart />} label="Cash Flow" />
-            <Tab icon={<PieChart />} label="Branch Performance" />
-            <Tab icon={<Receipt />} label="Expense Analysis" />
-            <Tab icon={<Timeline />} label="Trends" />
+          <Tabs 
+            value={activeTab} 
+            onChange={(e, newValue) => setActiveTab(newValue)}
+            variant="scrollable"
+            scrollButtons="auto"
+          >
+            <Tab icon={<BarChart />} label="Financial Overview" />
+            <Tab icon={<Business />} label="Branch Analysis" />
+            <Tab icon={<Receipt />} label="Expense Breakdown" />
+            <Tab icon={<Inventory />} label="Asset Management" />
+            <Tab icon={<People />} label="HR Financials" />
+            <Tab icon={<LocalShipping />} label="Operations" />
+            <Tab icon={<Timeline />} label="Reports" />
           </Tabs>
         </Box>
 
-        {/* Cash Flow Tab */}
+        {/* Financial Overview Tab */}
         <TabPanel value={activeTab} index={0}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
-              <Typography variant="h6" gutterBottom>6-Month Cash Flow</Typography>
-              <TableContainer component={Paper} variant="outlined">
-                <Table>
+            <Grid item xs={12} lg={8}>
+              <Typography variant="h6" gutterBottom>Comprehensive Cash Flow Analysis</Typography>
+              <TableContainer sx={tableContainerStyle}>
+                <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell>Month</TableCell>
-                      <TableCell align="right">Revenue</TableCell>
-                      <TableCell align="right">Expenses</TableCell>
-                      <TableCell align="right">Net Profit</TableCell>
-                      <TableCell align="right">Trend</TableCell>
+                      <TableCell sx={tableHeaderStyle}>Month</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Revenue</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Expenses</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Payroll</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Orders</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Net Profit</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Trend</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {cashFlowData.map((item, index) => (
-                      <TableRow key={index}>
+                      <TableRow key={index} hover>
                         <TableCell>{item.month}</TableCell>
                         <TableCell align="right">{formatCurrency(item.revenue)}</TableCell>
                         <TableCell align="right">{formatCurrency(item.expenses)}</TableCell>
+                        <TableCell align="right">{formatCurrency(item.payroll)}</TableCell>
+                        <TableCell align="right">{formatCurrency(item.orders)}</TableCell>
                         <TableCell align="right">
                           <Typography color={item.profit >= 0 ? 'success.main' : 'error.main'}>
                             {formatCurrency(item.profit)}
@@ -332,139 +518,450 @@ const FinancePage = () => {
                 </Table>
               </TableContainer>
             </Grid>
-            <Grid item xs={12} md={4}>
-              <Typography variant="h6" gutterBottom>Quick Stats</Typography>
-              <List>
-                <ListItem>
-                  <ListItemIcon><Assessment /></ListItemIcon>
-                  <ListItemText 
-                    primary="Average Monthly Revenue" 
-                    secondary={formatCurrency(totalRevenue / 6)}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon><Receipt /></ListItemIcon>
-                  <ListItemText 
-                    primary="Average Monthly Expenses" 
-                    secondary={formatCurrency(totalExpenses / 6)}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon><TrendingUp /></ListItemIcon>
-                  <ListItemText 
-                    primary="Best Month" 
-                    secondary={cashFlowData.reduce((best, current) => 
-                      current.profit > best.profit ? current : best
-                    ).month}
-                  />
-                </ListItem>
-              </List>
+            <Grid item xs={12} lg={4}>
+              <Typography variant="h6" gutterBottom>Financial Ratios & KPIs</Typography>
+              <Card variant="outlined" sx={{ mb: 2 }}>
+                <CardContent>
+                  <List dense>
+                    <ListItem>
+                      <ListItemIcon><Assessment /></ListItemIcon>
+                      <ListItemText 
+                        primary="Current Ratio" 
+                        secondary={financialRatios.currentRatio.toFixed(2)}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><AccountBalance /></ListItemIcon>
+                      <ListItemText 
+                        primary="Debt to Equity" 
+                        secondary={financialRatios.debtToEquity.toFixed(2)}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><TrendingUp /></ListItemIcon>
+                      <ListItemText 
+                        primary="Return on Assets" 
+                        secondary={`${financialRatios.returnOnAssets.toFixed(1)}%`}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><Inventory /></ListItemIcon>
+                      <ListItemText 
+                        primary="Inventory Turnover" 
+                        secondary={financialRatios.inventoryTurnover.toFixed(2)}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><MonetizationOn /></ListItemIcon>
+                      <ListItemText 
+                        primary="Gross Margin" 
+                        secondary={`${financialRatios.grossMargin.toFixed(1)}%`}
+                      />
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+              
+              <Typography variant="h6" gutterBottom>Balance Sheet Summary</Typography>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle2" gutterBottom>Assets</Typography>
+                  <Typography variant="h6" color="primary">{formatCurrency(totalAssets)}</Typography>
+                  <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>Liabilities</Typography>
+                  <Typography variant="h6" color="error">{formatCurrency(totalLiabilities)}</Typography>
+                  <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>Equity</Typography>
+                  <Typography variant="h6" color={equity >= 0 ? 'success.main' : 'error.main'}>
+                    {formatCurrency(equity)}
+                  </Typography>
+                </CardContent>
+              </Card>
             </Grid>
           </Grid>
         </TabPanel>
 
-        {/* Branch Performance Tab */}
+        {/* Branch Analysis Tab */}
         <TabPanel value={activeTab} index={1}>
-          <Typography variant="h6" gutterBottom>Revenue by Branch</Typography>
+          <Typography variant="h6" gutterBottom>Comprehensive Branch Financial Analysis</Typography>
+          <TableContainer sx={tableContainerStyle}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={tableHeaderStyle}>Branch</TableCell>
+                  <TableCell align="right" sx={tableHeaderStyle}>Revenue</TableCell>
+                  <TableCell align="right" sx={tableHeaderStyle}>Stock Value</TableCell>
+                  <TableCell align="right" sx={tableHeaderStyle}>Employee Cost</TableCell>
+                  <TableCell align="right" sx={tableHeaderStyle}>Profitability</TableCell>
+                  <TableCell align="right" sx={tableHeaderStyle}>Sales Count</TableCell>
+                  <TableCell align="right" sx={tableHeaderStyle}>Stock Items</TableCell>
+                  <TableCell align="right" sx={tableHeaderStyle}>Employees</TableCell>
+                  <TableCell align="right" sx={tableHeaderStyle}>Performance</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {branchFinancials.map((branch, index) => (
+                  <TableRow key={index} hover>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Business color="primary" />
+                        <Typography fontWeight="medium">{branch.name}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell align="right">{formatCurrency(branch.revenue)}</TableCell>
+                    <TableCell align="right">{formatCurrency(branch.stockValue)}</TableCell>
+                    <TableCell align="right">{formatCurrency(branch.employeeCost)}</TableCell>
+                    <TableCell align="right">
+                      <Typography color={branch.profitability >= 0 ? 'success.main' : 'error.main'}>
+                        {formatCurrency(branch.profitability)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">{branch.salesCount}</TableCell>
+                    <TableCell align="right">{branch.stockItems}</TableCell>
+                    <TableCell align="right">{branch.employeeCount}</TableCell>
+                    <TableCell align="right">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <LinearProgress 
+                          variant="determinate" 
+                          value={branch.percentage} 
+                          sx={{ width: 60, height: 6, borderRadius: 3 }}
+                        />
+                        <Typography variant="body2">{branch.percentage.toFixed(1)}%</Typography>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </TabPanel>
+
+        {/* Expense Breakdown Tab */}
+        <TabPanel value={activeTab} index={2}>
           <Grid container spacing={3}>
-            {branchPerformance.map((branch, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6">{branch.name}</Typography>
-                      <Business color="primary" />
-                    </Box>
-                    <Typography variant="h4" color="primary.main" gutterBottom>
-                      {formatCurrency(branch.revenue)}
-                    </Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2">Sales: {branch.salesCount}</Typography>
-                      <Typography variant="body2">{branch.percentage.toFixed(1)}%</Typography>
+            <Grid item xs={12} md={8}>
+              <Typography variant="h6" gutterBottom>Detailed Expense Analysis</Typography>
+              <TableContainer sx={tableContainerStyle}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={tableHeaderStyle}>Category</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Total Amount</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Count</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Average</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>% of Total</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Trend</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Object.entries(expensesByCategory)
+                      .sort(([,a], [,b]) => b.total - a.total)
+                      .map(([category, data]) => (
+                      <TableRow key={category} hover>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Receipt color="primary" />
+                            <Typography fontWeight="medium">{category}</Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="right">{formatCurrency(data.total)}</TableCell>
+                        <TableCell align="right">{data.count}</TableCell>
+                        <TableCell align="right">{formatCurrency(data.total / data.count)}</TableCell>
+                        <TableCell align="right">{((data.total / totalExpenses) * 100).toFixed(1)}%</TableCell>
+                        <TableCell align="right">
+                          <LinearProgress 
+                            variant="determinate" 
+                            value={(data.total / totalExpenses) * 100} 
+                            sx={{ width: 60, height: 6, borderRadius: 3 }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Typography variant="h6" gutterBottom>Expense Summary</Typography>
+              <Card variant="outlined" sx={{ mb: 2 }}>
+                <CardContent>
+                  <Typography variant="h4" color="error.main" gutterBottom>
+                    {formatCurrency(totalExpenses)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Expenses ({expensesData.length} items)
+                  </Typography>
+                </CardContent>
+              </Card>
+              
+              <Typography variant="h6" gutterBottom>Top Categories</Typography>
+              {Object.entries(expensesByCategory)
+                .sort(([,a], [,b]) => b.total - a.total)
+                .slice(0, 5)
+                .map(([category, data]) => (
+                <Card key={category} variant="outlined" sx={{ mb: 1 }}>
+                  <CardContent sx={{ py: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="body2">{category}</Typography>
+                      <Typography variant="body2" fontWeight="bold">
+                        {formatCurrency(data.total)}
+                      </Typography>
                     </Box>
                     <LinearProgress 
                       variant="determinate" 
-                      value={branch.percentage} 
-                      sx={{ height: 8, borderRadius: 4 }}
+                      value={(data.total / totalExpenses) * 100} 
+                      sx={{ mt: 1, height: 4, borderRadius: 2 }}
                     />
                   </CardContent>
                 </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </TabPanel>
-
-        {/* Expense Analysis Tab */}
-        <TabPanel value={activeTab} index={2}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <Typography variant="h6" gutterBottom>Top Expenses</Typography>
-              <List>
-                {topExpenses.map((expense, index) => (
-                  <ListItem key={index} divider>
-                    <ListItemText
-                      primary={expense.description || 'Expense'}
-                      secondary={`${expense.category || 'Other'} • ${expense.expense_date}`}
-                    />
-                    <Typography variant="h6" color="error.main">
-                      {formatCurrency(expense.amount)}
-                    </Typography>
-                  </ListItem>
-                ))}
-              </List>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Typography variant="h6" gutterBottom>Expense Categories</Typography>
-              {Object.entries(
-                expensesData.reduce((acc, expense) => {
-                  const category = expense.category || 'Other';
-                  acc[category] = (acc[category] || 0) + (expense.amount || 0);
-                  return acc;
-                }, {})
-              ).map(([category, amount]) => (
-                <Box key={category} sx={{ mb: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="body1">{category}</Typography>
-                    <Typography variant="body1">{formatCurrency(amount)}</Typography>
-                  </Box>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={(amount / totalExpenses) * 100} 
-                    sx={{ height: 6, borderRadius: 3 }}
-                  />
-                </Box>
               ))}
             </Grid>
           </Grid>
         </TabPanel>
 
-        {/* Trends Tab */}
+        {/* Asset Management Tab */}
         <TabPanel value={activeTab} index={3}>
-          <Typography variant="h6" gutterBottom>Financial Trends & Insights</Typography>
+          <Typography variant="h6" gutterBottom>Asset & Liability Management</Typography>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" gutterBottom>Asset Breakdown</Typography>
+              <TableContainer sx={tableContainerStyle}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={tableHeaderStyle}>Asset Type</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Value</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>% of Total</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Object.entries(assetBreakdown).map(([type, value]) => (
+                      <TableRow key={type} hover>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Inventory color="primary" />
+                            <Typography fontWeight="medium">{type.charAt(0).toUpperCase() + type.slice(1)}</Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="right">{formatCurrency(value)}</TableCell>
+                        <TableCell align="right">{((value / totalAssets) * 100).toFixed(1)}%</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" gutterBottom>Liability Breakdown</Typography>
+              <TableContainer sx={tableContainerStyle}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={tableHeaderStyle}>Liability Type</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Amount</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>% of Total</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Object.entries(liabilityBreakdown).map(([type, value]) => (
+                      <TableRow key={type} hover>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Payment color="error" />
+                            <Typography fontWeight="medium">{type.charAt(0).toUpperCase() + type.slice(1)}</Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="right">{formatCurrency(value)}</TableCell>
+                        <TableCell align="right">{((value / totalLiabilities) * 100).toFixed(1)}%</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Grid>
+          </Grid>
+        </TabPanel>
+
+        {/* HR Financials Tab */}
+        <TabPanel value={activeTab} index={4}>
+          <Typography variant="h6" gutterBottom>Human Resources Financial Impact</Typography>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              <TableContainer sx={tableContainerStyle}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={tableHeaderStyle}>Employee</TableCell>
+                      <TableCell sx={tableHeaderStyle}>Position</TableCell>
+                      <TableCell sx={tableHeaderStyle}>Branch</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Salary</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Status</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {employeesData.slice(0, 10).map((employee, index) => (
+                      <TableRow key={index} hover>
+                        <TableCell>{employee.full_name || 'N/A'}</TableCell>
+                        <TableCell>{employee.position || 'N/A'}</TableCell>
+                        <TableCell>{employee.branch_name || 'N/A'}</TableCell>
+                        <TableCell align="right">{formatCurrency(employee.salary || 0)}</TableCell>
+                        <TableCell align="right">
+                          <Chip 
+                            label={employee.status || 'Active'} 
+                            color={employee.status === 'Active' ? 'success' : 'default'}
+                            size="small"
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Grid>
+            <Grid item xs={12} md={4}>
               <Card variant="outlined">
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>Revenue Trend</Typography>
+                  <Typography variant="h6" gutterBottom>HR Summary</Typography>
+                  <List dense>
+                    <ListItem>
+                      <ListItemIcon><People /></ListItemIcon>
+                      <ListItemText 
+                        primary="Total Employees" 
+                        secondary={employeesData.length}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><MonetizationOn /></ListItemIcon>
+                      <ListItemText 
+                        primary="Total Payroll" 
+                        secondary={formatCurrency(totalPayroll)}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon><Assessment /></ListItemIcon>
+                      <ListItemText 
+                        primary="Average Salary" 
+                        secondary={formatCurrency(totalPayroll / (employeesData.length || 1))}
+                      />
+                    </ListItem>
+                  </List>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </TabPanel>
+
+        {/* Operations Tab */}
+        <TabPanel value={activeTab} index={5}>
+          <Typography variant="h6" gutterBottom>Operational Financial Data</Typography>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" gutterBottom>Stock Movements</Typography>
+              <TableContainer sx={tableContainerStyle}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={tableHeaderStyle}>Product</TableCell>
+                      <TableCell sx={tableHeaderStyle}>Type</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Quantity</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Value</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {stockMovements.slice(0, 10).map((movement, index) => (
+                      <TableRow key={index} hover>
+                        <TableCell>{movement.product_name || 'N/A'}</TableCell>
+                        <TableCell>{movement.movement_type || 'N/A'}</TableCell>
+                        <TableCell align="right">{movement.quantity || 0}</TableCell>
+                        <TableCell align="right">{formatCurrency(movement.total_cost || 0)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" gutterBottom>Vehicle Assets</Typography>
+              <TableContainer sx={tableContainerStyle}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={tableHeaderStyle}>Vehicle</TableCell>
+                      <TableCell sx={tableHeaderStyle}>Status</TableCell>
+                      <TableCell align="right" sx={tableHeaderStyle}>Value</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {vehiclesData.map((vehicle, index) => (
+                      <TableRow key={index} hover>
+                        <TableCell>{vehicle.vehicle_name || vehicle.license_plate || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={vehicle.status || 'Active'} 
+                            color={vehicle.status === 'Active' ? 'success' : 'default'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell align="right">{formatCurrency(vehicle.purchase_price || 0)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Grid>
+          </Grid>
+        </TabPanel>
+
+        {/* Reports Tab */}
+        <TabPanel value={activeTab} index={6}>
+          <Typography variant="h6" gutterBottom>Financial Reports & Analytics</Typography>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Alert severity="info" sx={{ mb: 3 }}>
+                Comprehensive financial reporting system with real-time data from all business operations.
+              </Alert>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>Profit & Loss</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <TrendingUp color="success" sx={{ fontSize: 40 }} />
+                    <TrendingUp color={netProfit >= 0 ? 'success' : 'error'} sx={{ fontSize: 40 }} />
                     <Box>
-                      <Typography variant="h4" color="success.main">+12.5%</Typography>
-                      <Typography variant="body2">vs last period</Typography>
+                      <Typography variant="h4" color={netProfit >= 0 ? 'success.main' : 'error.main'}>
+                        {formatCurrency(netProfit)}
+                      </Typography>
+                      <Typography variant="body2">Net Profit</Typography>
                     </Box>
                   </Box>
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={4}>
               <Card variant="outlined">
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>Expense Trend</Typography>
+                  <Typography variant="h6" gutterBottom>Cash Position</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <TrendingDown color="success" sx={{ fontSize: 40 }} />
+                    <AccountBalanceWallet color="primary" sx={{ fontSize: 40 }} />
                     <Box>
-                      <Typography variant="h4" color="success.main">-3.2%</Typography>
-                      <Typography variant="body2">vs last period</Typography>
+                      <Typography variant="h4" color="primary.main">
+                        {formatCurrency(totalRevenue - totalExpenses)}
+                      </Typography>
+                      <Typography variant="body2">Available Cash</Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>Business Health</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Assessment color="success" sx={{ fontSize: 40 }} />
+                    <Box>
+                      <Typography variant="h4" color="success.main">
+                        {financialRatios.currentRatio.toFixed(1)}
+                      </Typography>
+                      <Typography variant="body2">Health Score</Typography>
                     </Box>
                   </Box>
                 </CardContent>
