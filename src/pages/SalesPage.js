@@ -68,7 +68,7 @@ const SalesPage = () => {
     }
   });
   
-  const { register, control, handleSubmit, watch, reset, setValue, getValues } = methods;
+  const { register, control, handleSubmit, watch, reset } = methods;
 
   const { fields, append, remove } = useFieldArray({
     control,
