@@ -35,9 +35,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 
 
 import { useForm } from 'react-hook-form';
-import { logisticsAPI, hrAPI, dataAPI, packagesAPI } from '../services/api';
-import VehicleListPage from '../components/logistics/VehicleListPage';
-import PackageListPage from '../components/logistics/PackageListPage';
+import { logisticsAPI, hrAPI, dataAPI } from '../services/api';
 import LogisticsDashboard from '../components/logistics/LogisticsDashboard';
 import { formatCurrency } from '../theme';
 import toast from 'react-hot-toast';
@@ -79,7 +77,6 @@ const LogisticsPage = () => {
 
   const vehicles = useMemo(() => pageData?.vehicles || [], [pageData?.vehicles]);
   const allTrips = useMemo(() => pageData?.trips || [], [pageData?.trips]);
-  const packages = useMemo(() => pageData?.packages || [], [pageData?.packages]);
   const maintenance = useMemo(() => {
     let data = pageData?.maintenance || [];
     

@@ -16,8 +16,7 @@ import {
   Build,
   TrendingUp,
   Warning,
-  CheckCircle,
-  LocalShippingOutlined
+  CheckCircle
 } from '@mui/icons-material';
 import { useQuery } from 'react-query';
 import { logisticsAPI } from '../../services/api';

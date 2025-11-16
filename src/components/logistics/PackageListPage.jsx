@@ -15,13 +15,12 @@ import {
   TextField,
   InputAdornment,
   IconButton,
-  Chip,
   FormControl,
   InputLabel,
   Select,
   MenuItem
 } from '@mui/material';
-import { Search, Add, Edit, Delete, Visibility, LocalShipping } from '@mui/icons-material';
+import { Search, Add, Edit, Delete, Visibility } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { packagesAPI } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -69,16 +68,7 @@ const PackageListPage = ({ onAddPackage, onEditPackage, onViewPackage }) => {
     pkg.origin?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'packed': return 'info';
-      case 'shipped': return 'primary';
-      case 'in_transit': return 'warning';
-      case 'delivered': return 'success';
-      case 'returned': return 'error';
-      default: return 'default';
-    }
-  };
+
 
   const handleStatusChange = (packageId, newStatus) => {
     const actualDeliveryDate = newStatus === 'delivered' ? new Date().toISOString().split('T')[0] : null;
