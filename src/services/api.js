@@ -254,33 +254,33 @@ export const documentsAPI = {
 
 // Enhanced Expenses API
 export const expensesAPI = {
-  // Dashboard
+  // New architecture endpoints
+  getAll: (params) => api.get('/expenses', { params }).then(res => res.data.success ? res.data.data : res.data),
+  getById: (expenseDate) => api.get(`/expenses/${expenseDate}`).then(res => res.data.success ? res.data.data : res.data),
+  getByBranch: (branchId, params) => api.get(`/expenses/branches/${branchId}/expenses`, { params }).then(res => res.data.success ? res.data.data : res.data),
+  getByVehicle: (vehicleId, params) => api.get(`/expenses/vehicles/${vehicleId}/expenses`, { params }).then(res => res.data.success ? res.data.data : res.data),
+  getAnalytics: (params) => api.get('/expenses/analytics', { params }).then(res => res.data.success ? res.data.data : res.data),
+  create: (data) => api.post('/expenses', data).then(res => res.data.success ? res.data.data : res.data),
+  bulkCreate: (data) => api.post('/expenses/bulk', data).then(res => res.data.success ? res.data.data : res.data),
+  
+  // Legacy dashboard methods (kept for compatibility)
   getDashboardSummary: (params) => api.get('/expenses/dashboard/summary', { params }).then(res => res.data),
   getTrends: (params) => api.get('/expenses/dashboard/trends', { params }).then(res => res.data),
   
-  // Direct expenses
+  // Direct expenses (legacy)
   getDirectExpenses: (params) => api.get('/expenses/direct', { params }).then(res => res.data),
   createDirectExpense: (data) => api.post('/expenses/direct', data).then(res => res.data),
   updateDirectExpense: (id, data) => api.put(`/expenses/direct/${id}`, data).then(res => res.data),
   deleteDirectExpense: (id) => api.delete(`/expenses/direct/${id}`).then(res => res.data),
   
-  // Legacy methods
-  getAll: (params) => api.get('/expenses', { params }).then(res => res.data),
-  create: (data) => api.post('/expenses', data).then(res => res.data),
+  // Legacy methods (kept for compatibility)
   update: (id, data) => api.put(`/expenses/${id}`, data).then(res => res.data),
   delete: (id) => api.delete(`/expenses/${id}`).then(res => res.data),
   getCategories: () => Promise.resolve([
-    { value: 'office_supplies', label: 'Office Supplies' },
-    { value: 'travel', label: 'Travel' },
-    { value: 'marketing', label: 'Marketing' },
-    { value: 'utilities', label: 'Utilities' },
-    { value: 'rent', label: 'Rent' },
-    { value: 'insurance', label: 'Insurance' },
-    { value: 'maintenance', label: 'Maintenance' },
     { value: 'fuel', label: 'Fuel' },
-    { value: 'equipment', label: 'Equipment' },
-    { value: 'professional_services', label: 'Professional Services' },
-    { value: 'training', label: 'Training' },
+    { value: 'maintenance', label: 'Maintenance' },
+    { value: 'utilities', label: 'Utilities' },
+    { value: 'vehicle_related', label: 'Vehicle Related' },
     { value: 'other', label: 'Other' }
   ]),
   getSummary: (params) => expensesAPI.getDashboardSummary(params),
@@ -369,6 +369,13 @@ export const dataAPI = {
           const queryString = new URLSearchParams(params).toString();
           const adminUrl = `/data/page/admin${queryString ? `?${queryString}` : ''}`;
           return api.get(adminUrl).then(res => res.data);
+          
+        case 'expenses':
+          const [expensesData, expenseAnalytics] = await Promise.all([
+            expensesAPI.getAll(params).catch(() => []),
+            expensesAPI.getAnalytics(params).catch(() => {})
+          ]);
+          return { expenses: expensesData, analytics: expenseAnalytics };
 
         case 'manager':
           if (!branchId) throw new Error('Branch ID required for manager page');
