@@ -39,7 +39,6 @@ import toast from 'react-hot-toast';
 
 // Bills Management Component
 const BillsManagement = () => {
-  const [showBillModal, setShowBillModal] = useState(false);
   
   const { data: billsData = [], isLoading: billsLoading } = useQuery(
     'bills',
@@ -51,7 +50,7 @@ const BillsManagement = () => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6">Bills Management</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={() => setShowBillModal(true)}>
+        <Button variant="contained" startIcon={<Add />}>
           Create Bill
         </Button>
       </Box>
@@ -230,7 +229,6 @@ const PaymentsProcessing = () => {
 
 // Vendor Credits Component
 const VendorCredits = () => {
-  const [showCreditModal, setShowCreditModal] = useState(false);
   
   const { data: creditsData = [], isLoading: creditsLoading } = useQuery(
     'vendor-credits',
@@ -242,7 +240,7 @@ const VendorCredits = () => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6">Vendor Credits</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={() => setShowCreditModal(true)}>
+        <Button variant="contained" startIcon={<Add />}>
           Create Credit
         </Button>
       </Box>
