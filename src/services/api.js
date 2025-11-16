@@ -184,15 +184,22 @@ export const ordersAPI = {
 
 // HR API
 export const hrAPI = {
-  getEmployees: (params) => api.get('/hr/employees', { params }).then(res => res.data),
+  getEmployees: (params) => api.get('/hr/employees', { params }).then(res => res.data.employees || res.data),
   createEmployee: (data) => api.post('/hr/employees', data).then(res => res.data),
   updateEmployee: (id, data) => api.put(`/hr/employees/${id}`, data).then(res => res.data),
   deleteEmployee: (id) => api.delete(`/hr/employees/${id}`).then(res => res.data),
   generatePayroll: (data) => api.post('/hr/payroll/generate', data).then(res => res.data),
-  getPayroll: (params) => api.get('/hr/payroll', { params }).then(res => res.data),
+  getPayroll: (params) => api.get('/hr/payroll', { params }).then(res => res.data.payroll_records || res.data),
   sendPayslips: (payrollIds) => api.post('/hr/payroll/send-payslips', { payroll_ids: payrollIds }).then(res => res.data),
   bulkUpdatePayroll: (payrollIds, status) => api.patch('/hr/payroll/bulk-update', { payroll_ids: payrollIds, status }).then(res => res.data),
   getDriverStats: () => api.get('/hr/drivers/stats').then(res => res.data),
+  getBranches: () => api.get('/hr/branches').then(res => res.data.branches || res.data),
+  getDashboard: () => api.get('/hr/dashboard').then(res => res.data),
+  getDocuments: (params) => api.get('/hr/documents', { params }).then(res => res.data.documents || res.data),
+  getAuditLogs: (params) => api.get('/hr/audit-logs', { params }).then(res => res.data.audit_logs || res.data),
+  getEmployeePerformance: (employeeId, params) => api.get(`/hr/employees/${employeeId}/performance`, { params }).then(res => res.data),
+  getDepartmentSummary: (params) => api.get('/hr/departments/summary', { params }).then(res => res.data),
+  getAttendance: (params) => api.get('/hr/attendance', { params }).then(res => res.data),
 };
 
 // Boss API
@@ -424,11 +431,12 @@ export const dataAPI = {
           return await ordersAPI.getAll(params).catch(() => []);
 
         case 'hr':
-          const [employeesData, payrollData] = await Promise.all([
+          const [employeesData, payrollData, branchesData] = await Promise.all([
             hrAPI.getEmployees(params).catch(() => []),
-            hrAPI.getPayroll(params).catch(() => [])
+            hrAPI.getPayroll(params).catch(() => []),
+            hrAPI.getBranches().catch(() => [])
           ]);
-          return { employees: employeesData, payroll: payrollData };
+          return { employees: employeesData, payroll: payrollData, branches: branchesData };
 
         case 'boss':
           const [bossBranches, bossEmployees, bossStock] = await Promise.all([

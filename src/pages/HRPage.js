@@ -77,8 +77,8 @@ const HRPage = () => {
   );
   
   const { data: branches = [], isLoading: branchesLoading } = useQuery(
-    'branches',
-    () => branchesAPI.getAll(),
+    'hrBranches',
+    () => hrAPI.getBranches(),
     { retry: false }
   );
 
