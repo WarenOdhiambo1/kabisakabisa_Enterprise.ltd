@@ -806,7 +806,7 @@ const FinancePage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {employeesData.slice(0, 10).map((employee, index) => (
+                    {Array.isArray(employeesData) ? employeesData.slice(0, 10).map((employee, index) => (
                       <TableRow key={index} hover>
                         <TableCell>{employee.full_name || 'N/A'}</TableCell>
                         <TableCell>{employee.position || 'N/A'}</TableCell>
@@ -952,7 +952,7 @@ const FinancePage = () => {
                   </TableHead>
                   <TableBody>
                     {/* Trips Data */}
-                    {tripsData.slice(0, 5).map((trip, index) => (
+                    {Array.isArray(tripsData) ? tripsData.slice(0, 5).map((trip, index) => (
                       <TableRow key={`trip-${index}`} hover>
                         <TableCell>Trip to {trip.destination}</TableCell>
                         <TableCell>Transportation</TableCell>
@@ -961,9 +961,9 @@ const FinancePage = () => {
                         <TableCell><Chip label="Completed" color="success" size="small" /></TableCell>
                         <TableCell>{trip.trip_date ? new Date(trip.trip_date).toLocaleDateString() : 'N/A'}</TableCell>
                       </TableRow>
-                    ))}
+                    )) : null}
                     {/* Maintenance Data */}
-                    {maintenanceData.slice(0, 5).map((maintenance, index) => (
+                    {Array.isArray(maintenanceData) ? maintenanceData.slice(0, 5).map((maintenance, index) => (
                       <TableRow key={`maintenance-${index}`} hover>
                         <TableCell>{maintenance.maintenance_type} - {maintenance.vehicle_id}</TableCell>
                         <TableCell>Maintenance</TableCell>
@@ -972,8 +972,8 @@ const FinancePage = () => {
                         <TableCell><Chip label="Completed" color="success" size="small" /></TableCell>
                         <TableCell>{maintenance.maintenance_date ? new Date(maintenance.maintenance_date).toLocaleDateString() : 'N/A'}</TableCell>
                       </TableRow>
-                    ))}
-                    {tripsData.length === 0 && maintenanceData.length === 0 && (
+                    )) : null}
+                    {(!Array.isArray(tripsData) || tripsData.length === 0) && (!Array.isArray(maintenanceData) || maintenanceData.length === 0) && (
                       <TableRow>
                         <TableCell colSpan={6} align="center">No logistics data found</TableCell>
                       </TableRow>
@@ -1065,14 +1065,14 @@ const FinancePage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {stockMovements.slice(0, 10).map((movement, index) => (
+                    {Array.isArray(stockMovements) ? stockMovements.slice(0, 10).map((movement, index) => (
                       <TableRow key={index} hover>
                         <TableCell>{movement.product_name || 'N/A'}</TableCell>
                         <TableCell>{movement.movement_type || 'N/A'}</TableCell>
                         <TableCell align="right">{movement.quantity || 0}</TableCell>
                         <TableCell align="right">{formatCurrency(movement.total_cost || 0)}</TableCell>
                       </TableRow>
-                    ))}
+                    )) : null}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -1089,7 +1089,7 @@ const FinancePage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {vehiclesData.map((vehicle, index) => (
+                    {Array.isArray(vehiclesData) ? vehiclesData.map((vehicle, index) => (
                       <TableRow key={index} hover>
                         <TableCell>{vehicle.vehicle_name || vehicle.license_plate || 'N/A'}</TableCell>
                         <TableCell>
@@ -1101,7 +1101,7 @@ const FinancePage = () => {
                         </TableCell>
                         <TableCell align="right">{formatCurrency(vehicle.purchase_price || 0)}</TableCell>
                       </TableRow>
-                    ))}
+                    )) : null}
                   </TableBody>
                 </Table>
               </TableContainer>
