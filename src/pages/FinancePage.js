@@ -119,12 +119,12 @@ const FinancePage = () => {
   );
 
   // Comprehensive financial calculations
-  const totalRevenue = salesData.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
-  const totalExpenses = expensesData.reduce((sum, expense) => sum + (expense.amount || 0), 0);
-  const totalPayroll = payrollData.reduce((sum, payroll) => sum + (payroll.net_pay || 0), 0);
+  const totalRevenue = Array.isArray(salesData) ? salesData.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) : 0;
+  const totalExpenses = Array.isArray(expensesData) ? expensesData.reduce((sum, expense) => sum + (expense.amount || 0), 0) : 0;
+  const totalPayroll = Array.isArray(payrollData) ? payrollData.reduce((sum, payroll) => sum + (payroll.net_pay || 0), 0) : 0;
 
-  const pendingPayments = ordersData.reduce((sum, order) => sum + (order.balance_remaining || 0), 0);
-  const stockValue = stockData.reduce((sum, stock) => sum + ((stock.quantity_available || 0) * (stock.unit_price || 0)), 0);
+  const pendingPayments = Array.isArray(ordersData) ? ordersData.reduce((sum, order) => sum + (order.balance_remaining || 0), 0) : 0;
+  const stockValue = Array.isArray(stockData) ? stockData.reduce((sum, stock) => sum + ((stock.quantity_available || 0) * (stock.unit_price || 0)), 0) : 0;
   const netProfit = totalRevenue - totalExpenses - totalPayroll;
   const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100) : 0;
   const totalAssets = stockValue + (totalRevenue - totalExpenses);
@@ -137,21 +137,21 @@ const FinancePage = () => {
     date.setMonth(date.getMonth() - i);
     const monthStr = date.toISOString().slice(0, 7);
     
-    const monthRevenue = salesData
+    const monthRevenue = Array.isArray(salesData) ? salesData
       .filter(sale => sale.sale_date?.startsWith(monthStr))
-      .reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
+      .reduce((sum, sale) => sum + (sale.total_amount || 0), 0) : 0;
     
-    const monthExpenses = expensesData
+    const monthExpenses = Array.isArray(expensesData) ? expensesData
       .filter(expense => expense.expense_date?.startsWith(monthStr))
-      .reduce((sum, expense) => sum + (expense.amount || 0), 0);
+      .reduce((sum, expense) => sum + (expense.amount || 0), 0) : 0;
     
-    const monthPayroll = payrollData
+    const monthPayroll = Array.isArray(payrollData) ? payrollData
       .filter(payroll => payroll.pay_date?.startsWith(monthStr))
-      .reduce((sum, payroll) => sum + (payroll.net_pay || 0), 0);
+      .reduce((sum, payroll) => sum + (payroll.net_pay || 0), 0) : 0;
     
-    const monthOrders = ordersData
+    const monthOrders = Array.isArray(ordersData) ? ordersData
       .filter(order => order.order_date?.startsWith(monthStr))
-      .reduce((sum, order) => sum + (order.total_amount || 0), 0);
+      .reduce((sum, order) => sum + (order.total_amount || 0), 0) : 0;
     
     return {
       month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
@@ -164,26 +164,26 @@ const FinancePage = () => {
   }).reverse();
 
   // Financial analysis by category
-  const expensesByCategory = expensesData.reduce((acc, expense) => {
+  const expensesByCategory = Array.isArray(expensesData) ? expensesData.reduce((acc, expense) => {
     const category = expense.category || 'Other';
     if (!acc[category]) acc[category] = { total: 0, count: 0, items: [] };
     acc[category].total += expense.amount || 0;
     acc[category].count += 1;
     acc[category].items.push(expense);
     return acc;
-  }, {});
+  }, {}) : {};
 
   // Branch financial performance
   const branchFinancials = branches.map(branch => {
-    const branchSales = salesData.filter(sale => 
+    const branchSales = Array.isArray(salesData) ? salesData.filter(sale => 
       sale.branch_id === branch.id || (Array.isArray(sale.branch_id) && sale.branch_id.includes(branch.id))
-    );
-    const branchStock = stockData.filter(stock => 
+    ) : [];
+    const branchStock = Array.isArray(stockData) ? stockData.filter(stock => 
       stock.branch_id && stock.branch_id.includes(branch.id)
-    );
-    const branchEmployees = employeesData.filter(emp => 
+    ) : [];
+    const branchEmployees = Array.isArray(employeesData) ? employeesData.filter(emp => 
       emp.branch_id && emp.branch_id.includes(branch.id)
-    );
+    ) : [];
     
     const revenue = branchSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0);
     const stockValue = branchStock.reduce((sum, stock) => sum + ((stock.quantity_available || 0) * (stock.unit_price || 0)), 0);
@@ -208,7 +208,7 @@ const FinancePage = () => {
     inventory: stockValue,
     cash: totalRevenue - totalExpenses,
     receivables: pendingPayments,
-    equipment: vehiclesData.reduce((sum, vehicle) => sum + (vehicle.purchase_price || 0), 0)
+    equipment: Array.isArray(vehiclesData) ? vehiclesData.reduce((sum, vehicle) => sum + (vehicle.purchase_price || 0), 0) : 0
   };
 
   // Liability breakdown
