@@ -74,6 +74,16 @@ const OrdersPage = () => {
     () => stockAPI.getAll ? stockAPI.getAll() : Promise.resolve([])
   );
 
+  const { data: orderItems = [] } = useQuery(
+    'orderItems',
+    () => fetch('https://enterprisebackendltd-iwi8.vercel.app/api/orders/items', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
+    }).then(res => res.json()).catch(() => [])
+  );
+
   // Mutations
   const createOrderMutation = useMutation(
     (data) => ordersAPI.create(data),
@@ -437,6 +447,8 @@ const OrdersPage = () => {
           <Tab label="All Orders" />
           <Tab label="Pending Orders" />
           <Tab label="Completed Orders" />
+          <Tab label="Order Items" />
+          <Tab label="Order Tracking" />
         </Tabs>
       </Box>
 
@@ -444,108 +456,213 @@ const OrdersPage = () => {
       <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            {activeTab === 0 ? 'All Orders' : activeTab === 1 ? 'Pending Orders' : 'Completed Orders'}
+            {activeTab === 0 ? 'All Orders' : activeTab === 1 ? 'Pending Orders' : activeTab === 2 ? 'Completed Orders' : activeTab === 3 ? 'Order Items' : 'Order Tracking Details'}
           </Typography>
           <TableContainer component={Paper}>
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>Order Date</TableCell>
-                  <TableCell>Supplier</TableCell>
-                  <TableCell>Total Amount</TableCell>
-                  <TableCell>Amount Paid</TableCell>
-                  <TableCell>Balance</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Expected Delivery</TableCell>
-                  <TableCell>Actions</TableCell>
+                  {activeTab === 3 ? (
+                    <>
+                      <TableCell>Order ID</TableCell>
+                      <TableCell>Product Name</TableCell>
+                      <TableCell>Quantity Ordered</TableCell>
+                      <TableCell>Unit Price</TableCell>
+                      <TableCell>Total</TableCell>
+                      <TableCell>Quantity Received</TableCell>
+                      <TableCell>Status</TableCell>
+                    </>
+                  ) : activeTab === 4 ? (
+                    <>
+                      <TableCell>Order</TableCell>
+                      <TableCell>Product</TableCell>
+                      <TableCell>Ordered</TableCell>
+                      <TableCell>Completed</TableCell>
+                      <TableCell>Remaining</TableCell>
+                      <TableCell>Destination</TableCell>
+                      <TableCell>Progress</TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell>Order Date</TableCell>
+                      <TableCell>Supplier</TableCell>
+                      <TableCell>Total Amount</TableCell>
+                      <TableCell>Amount Paid</TableCell>
+                      <TableCell>Balance</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Expected Delivery</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </>
+                  )}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {orders
-                  .filter(order => {
-                    if (activeTab === 1) return ['ordered', 'partially_paid', 'paid', 'delivered'].includes(order.status);
-                    if (activeTab === 2) return order.status === 'completed';
-                    return true;
-                  })
-                  .map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
-                      <TableCell>{order.supplier_name}</TableCell>
-                      <TableCell>{formatCurrency(order.total_amount)}</TableCell>
-                      <TableCell>{formatCurrency(order.amount_paid)}</TableCell>
-                      <TableCell>
-                        <Typography 
-                          color={order.balance_remaining > 0 ? 'error.main' : 'success.main'}
-                          variant="body2"
-                        >
-                          {formatCurrency(order.balance_remaining)}
-                        </Typography>
-                      </TableCell>
+                {activeTab === 3 ? (
+                  orderItems.length > 0 ? orderItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{Array.isArray(item.order_id) ? item.order_id[0] : item.order_id}</TableCell>
+                      <TableCell>{item.product_name}</TableCell>
+                      <TableCell>{item.quantity_ordered}</TableCell>
+                      <TableCell>{formatCurrency(item.purchase_price_per_unit)}</TableCell>
+                      <TableCell>{formatCurrency(item.quantity_ordered * item.purchase_price_per_unit)}</TableCell>
+                      <TableCell>{item.quantity_received || 0}</TableCell>
                       <TableCell>
                         <Chip 
-                          label={(order.status || 'unknown').replace('_', ' ').toUpperCase()}
-                          color={getStatusColor(order.status)}
+                          label={item.quantity_received >= item.quantity_ordered ? 'COMPLETED' : 'PENDING'}
+                          color={item.quantity_received >= item.quantity_ordered ? 'success' : 'warning'}
                           size="small"
                         />
                       </TableCell>
-                      <TableCell>
-                        {order.expected_delivery_date ? 
-                          new Date(order.expected_delivery_date).toLocaleDateString() : 
-                          'N/A'
-                        }
-                      </TableCell>
-                      <TableCell>
-                        {order.balance_remaining > 0 && (
-                          <IconButton 
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setShowPayment(true);
-                            }}
-                            size="small"
-                            color="primary"
-                          >
-                            <Payment />
-                          </IconButton>
-                        )}
-                        {['paid', 'partially_paid'].includes(order.status) && (
-                          <IconButton 
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setShowDelivery(true);
-                            }}
-                            size="small"
-                            color="success"
-                            title="Mark as Delivered"
-                          >
-                            <LocalShipping />
-                          </IconButton>
-                        )}
-                        {!['completed'].includes(order.status) && (
-                          <Button 
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setShowComplete(true);
-                            }}
-                            size="small"
-                            variant="contained"
-                            color="success"
-                            sx={{ ml: 1 }}
-                            title="Complete Order & Add Stock"
-                          >
-                            Complete
-                          </Button>
-                        )}
-                        <IconButton 
-                          onClick={() => deleteOrderMutation.mutate(order.id)}
-                          size="small" 
-                          color="error"
-                        >
-                          <Delete />
-                        </IconButton>
+                    </TableRow>
+                  )) : (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center">
+                        <Typography color="text.secondary" sx={{ py: 4 }}>
+                          No order items found.
+                        </Typography>
                       </TableCell>
                     </TableRow>
-                  ))}
-                {orders.length === 0 && (
+                  )
+                ) : activeTab === 4 ? (
+                  orderItems.length > 0 ? orderItems.map((item) => {
+                    const orderId = Array.isArray(item.order_id) ? item.order_id[0] : item.order_id;
+                    const order = orders.find(o => o.id === orderId);
+                    const quantityOrdered = item.quantity_ordered || 0;
+                    const quantityReceived = item.quantity_received || 0;
+                    const remaining = quantityOrdered - quantityReceived;
+                    const progress = quantityOrdered > 0 ? (quantityReceived / quantityOrdered) * 100 : 0;
+                    const branchName = branches.find(b => item.branch_destination_id && item.branch_destination_id.includes(b.id))?.branch_name || 'Not Assigned';
+                    
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body2" fontWeight="bold">{order?.supplier_name || 'Unknown'}</Typography>
+                            <Typography variant="caption" color="text.secondary">{orderId}</Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>{item.product_name}</TableCell>
+                        <TableCell>{quantityOrdered}</TableCell>
+                        <TableCell>{quantityReceived}</TableCell>
+                        <TableCell>
+                          <Typography color={remaining > 0 ? 'error.main' : 'success.main'} fontWeight="bold">
+                            {remaining}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{branchName}</TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{ width: 60, height: 6, bgcolor: 'grey.300', borderRadius: 1 }}>
+                              <Box 
+                                sx={{ 
+                                  width: `${progress}%`, 
+                                  height: '100%', 
+                                  bgcolor: progress === 100 ? 'success.main' : 'warning.main',
+                                  borderRadius: 1 
+                                }} 
+                              />
+                            </Box>
+                            <Typography variant="caption">{Math.round(progress)}%</Typography>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }) : (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center">
+                        <Typography color="text.secondary" sx={{ py: 4 }}>
+                          No order tracking data found.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )
+                ) : (
+                  orders
+                    .filter(order => {
+                      if (activeTab === 1) return ['ordered', 'partially_paid', 'paid', 'delivered'].includes(order.status);
+                      if (activeTab === 2) return order.status === 'completed';
+                      return true;
+                    })
+                    .map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
+                        <TableCell>{order.supplier_name}</TableCell>
+                        <TableCell>{formatCurrency(order.total_amount)}</TableCell>
+                        <TableCell>{formatCurrency(order.amount_paid)}</TableCell>
+                        <TableCell>
+                          <Typography 
+                            color={order.balance_remaining > 0 ? 'error.main' : 'success.main'}
+                            variant="body2"
+                          >
+                            {formatCurrency(order.balance_remaining)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={(order.status || 'unknown').replace('_', ' ').toUpperCase()}
+                            color={getStatusColor(order.status)}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {order.expected_delivery_date ? 
+                            new Date(order.expected_delivery_date).toLocaleDateString() : 
+                            'N/A'
+                          }
+                        </TableCell>
+                        <TableCell>
+                          {order.balance_remaining > 0 && (
+                            <IconButton 
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setShowPayment(true);
+                              }}
+                              size="small"
+                              color="primary"
+                            >
+                              <Payment />
+                            </IconButton>
+                          )}
+                          {['paid', 'partially_paid'].includes(order.status) && (
+                            <IconButton 
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setShowDelivery(true);
+                              }}
+                              size="small"
+                              color="success"
+                              title="Mark as Delivered"
+                            >
+                              <LocalShipping />
+                            </IconButton>
+                          )}
+                          {!['completed'].includes(order.status) && (
+                            <Button 
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setShowComplete(true);
+                              }}
+                              size="small"
+                              variant="contained"
+                              color="success"
+                              sx={{ ml: 1 }}
+                              title="Complete Order & Add Stock"
+                            >
+                              Complete
+                            </Button>
+                          )}
+                          <IconButton 
+                            onClick={() => deleteOrderMutation.mutate(order.id)}
+                            size="small" 
+                            color="error"
+                          >
+                            <Delete />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                )}
+                {(activeTab !== 3 && activeTab !== 4) && orders.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} align="center">
                       <Typography color="text.secondary" sx={{ py: 4 }}>
