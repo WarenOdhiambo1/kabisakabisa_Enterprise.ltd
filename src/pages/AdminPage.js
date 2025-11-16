@@ -110,10 +110,10 @@ const AdminPage = () => {
   const isLoading = employeesLoading || branchesLoading || productsLoading;
 
   // Calculate real-time metrics
-  const totalRevenue = sales.reduce((sum, sale) => sum + (parseFloat(sale.total_amount) || 0), 0);
-  const totalExpenses = expenses.reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0);
+  const totalRevenue = (sales || []).reduce((sum, sale) => sum + (parseFloat(sale.total_amount) || 0), 0);
+  const totalExpenses = (expenses || []).reduce((sum, expense) => sum + (parseFloat(expense.amount) || 0), 0);
   const netProfit = totalRevenue - totalExpenses;
-  const lowStockItems = products.filter(item => (parseFloat(item.quantity_available) || 0) <= (parseFloat(item.reorder_level) || 10));
+  const lowStockItems = (products || []).filter(item => (parseFloat(item.quantity_available) || 0) <= (parseFloat(item.reorder_level) || 10));
 
   const createUserMutation = useMutation(
     (data) => hrAPI.createEmployee(data),
