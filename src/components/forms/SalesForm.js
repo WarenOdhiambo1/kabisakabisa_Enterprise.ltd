@@ -23,16 +23,17 @@ const SalesForm = ({ register, control, fields, append, remove, watch, stock }) 
                     onChange={(e) => {
                       const selectedProduct = stock.find(item => item.product_id === e.target.value);
                       onChange(e.target.value);
-                      // Set product_name using setValue
+                      // Set product_name and unit_price using setValue
                       if (selectedProduct) {
                         setValue(`items.${index}.product_name`, selectedProduct.product_name);
+                        setValue(`items.${index}.unit_price`, selectedProduct.unit_price || 0);
                       }
                     }}
                     label="Product"
                   >
                     {stock.map((item) => (
-                      <MenuItem key={item.product_id} value={item.product_id}>
-                        {item.product_name} (Available: {item.quantity_available})
+                      <MenuItem key={item.product_id || item.id} value={item.product_id || item.id}>
+                        {item.product_name} (Qty: {item.quantity_available})
                       </MenuItem>
                     ))}
                   </Select>

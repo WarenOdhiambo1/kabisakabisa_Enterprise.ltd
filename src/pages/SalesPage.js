@@ -146,29 +146,25 @@ const SalesPage = () => {
 
   // Mutations
   const createSaleMutation = useMutation(
-    (data) => {
-      const saleData = {
-        items: data.items,
-        branchId: selectedBranchId,
-        customer_name: data.customer_name || '',
-        payment_method: data.payment_method || 'cash',
-        sale_date: data.sale_date || new Date().toISOString().split('T')[0],
-        employee_id: user?.id
-      };
-      return salesAPI.createSale(saleData);
-    },
+    (data) => salesAPI.createSale(data),
     {
-      onSuccess: () => {
+      onSuccess: (response) => {
+        console.log('Sale success response:', response);
         toast.success('Sale recorded successfully!');
         reset();
         queryClient.invalidateQueries(['stock', selectedBranchId]);
         queryClient.invalidateQueries(['sales', selectedBranchId]);
       },
-      onError: () => {
-        toast.success('Sale recorded successfully!');
-        reset();
-        queryClient.invalidateQueries(['stock', selectedBranchId]);
-        queryClient.invalidateQueries(['sales', selectedBranchId]);
+      onError: (error) => {
+        console.error('Sale error:', error);
+        if (error.response?.data?.success) {
+          toast.success('Sale recorded successfully!');
+          reset();
+          queryClient.invalidateQueries(['stock', selectedBranchId]);
+          queryClient.invalidateQueries(['sales', selectedBranchId]);
+        } else {
+          toast.error(error.response?.data?.message || 'Failed to record sale');
+        }
       }
     }
   );
@@ -184,29 +180,53 @@ const SalesPage = () => {
 
 
   const onSubmitSale = (data) => {
-    // Backend validation: items array is required
+    console.log('Submitting sale data:', data);
+    
+    if (!selectedBranchId) {
+      toast.error('Please select a branch first');
+      return;
+    }
+    
     if (!data.items || data.items.length === 0) {
-      toast.error('Sale items are required');
+      toast.error('At least one item is required');
       return;
     }
 
-    // Validate each item matches backend requirements
+    // Validate and clean items
+    const validItems = [];
     for (const item of data.items) {
       if (!item.product_name) {
-        toast.error('Product name is required for all items');
+        toast.error('Please select a product for all items');
         return;
       }
-      if (!item.quantity || item.quantity <= 0) {
+      if (!item.quantity || Number(item.quantity) <= 0) {
         toast.error('Valid quantity is required for all items');
         return;
       }
-      if (!item.unit_price || item.unit_price <= 0) {
+      if (!item.unit_price || Number(item.unit_price) <= 0) {
         toast.error('Valid unit price is required for all items');
         return;
       }
+      
+      validItems.push({
+        product_id: item.product_id,
+        product_name: item.product_name,
+        quantity: Number(item.quantity),
+        unit_price: Number(item.unit_price)
+      });
     }
 
-    createSaleMutation.mutate(data);
+    const saleData = {
+      items: validItems,
+      branchId: selectedBranchId,
+      customer_name: data.customer_name || '',
+      payment_method: data.payment_method || 'cash',
+      sale_date: data.sale_date || new Date().toISOString().split('T')[0],
+      employee_id: user?.id
+    };
+    
+    console.log('Final sale data:', saleData);
+    createSaleMutation.mutate(saleData);
   };
 
   // New Expense Management System
