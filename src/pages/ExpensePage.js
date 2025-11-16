@@ -24,18 +24,22 @@ import {
   InputLabel,
   Chip,
   Paper,
-  IconButton
+  IconButton,
+  Tabs,
+  Tab
 } from '@mui/material';
-import { Add, Edit, Delete, TrendingUp, Business } from '@mui/icons-material';
+import { Add, Edit, Delete, TrendingUp, Business, Dashboard, AccountBalance, CreditCard, Assignment } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useForm } from 'react-hook-form';
-import { expensesAPI, branchesAPI, logisticsAPI } from '../services/api';
+import { expensesAPI, branchesAPI, logisticsAPI, billsAPI, paymentsAPI, vendorCreditsAPI } from '../services/api';
+import ExpensesDashboard from '../components/expenses/ExpensesDashboard';
 import { formatCurrency } from '../theme';
 
 import toast from 'react-hot-toast';
 
 const ExpensePage = () => {
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState(0);
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -221,8 +225,29 @@ const ExpensePage = () => {
         <Typography variant="h4">
           Expense Management
         </Typography>
-        
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+      </Box>
+
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+          <Tab label="dashboard" icon={<Dashboard />} />
+          <Tab label="direct expenses" icon={<Receipt />} />
+          <Tab label="bills" icon={<AccountBalance />} />
+          <Tab label="payments" icon={<CreditCard />} />
+          <Tab label="credits" icon={<Assignment />} />
+        </Tabs>
+      </Box>
+
+      {/* Dashboard Tab */}
+      {activeTab === 0 && (
+        <ExpensesDashboard />
+      )}
+
+      {/* Direct Expenses Tab */}
+      {activeTab === 1 && (
+        <Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <FormControl sx={{ minWidth: 200 }}>
             <InputLabel>Branch Filter</InputLabel>
             <Select
@@ -246,11 +271,11 @@ const ExpensePage = () => {
             onClick={() => setShowExpenseModal(true)}
           >
             Add Expense
-          </Button>
-        </Box>
-      </Box>
+            </Button>
+            </Box>
+          </Box>
 
-      {/* Date Range Filter */}
+          {/* Date Range Filter */}
       <Card sx={{ mb: 3, backgroundColor: '#f6f4d2' }}>
         <CardContent>
           <Grid container spacing={{ xs: 1, sm: 2 }} alignItems="center">
@@ -289,7 +314,7 @@ const ExpensePage = () => {
         </CardContent>
       </Card>
 
-      {/* Summary Cards */}
+          {/* Summary Cards */}
       {expenseSummary && (
         <Grid container spacing={{ xs: 1, sm: 2 }} sx={{ mb: 3 }}>
           {expenseSummary.summary.slice(0, 4).map((categorySum) => {
@@ -315,7 +340,7 @@ const ExpensePage = () => {
         </Grid>
       )}
 
-      {/* Expenses Table */}
+          {/* Expenses Table */}
       <Card sx={{ backgroundColor: '#ffe5d9' }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
@@ -401,7 +426,7 @@ const ExpensePage = () => {
         </CardContent>
       </Card>
 
-      {/* Add/Edit Expense Modal */}
+          {/* Add/Edit Expense Modal */}
       <Dialog open={showExpenseModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
         <DialogTitle>
           {editingExpense ? 'Edit Expense' : 'Add New Expense'}
@@ -496,9 +521,52 @@ const ExpensePage = () => {
           >
             {editingExpense ? 'Update' : 'Create'} Expense
           </Button>
-        </DialogActions>
-      </Dialog>
+          </DialogActions>
+        </Dialog>
+        </Box>
+      )}
 
+      {/* Bills Tab */}
+      {activeTab === 2 && (
+        <Card sx={{ backgroundColor: '#f6f4d2' }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Bills Management
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Bills management functionality will be implemented here.
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Payments Tab */}
+      {activeTab === 3 && (
+        <Card sx={{ backgroundColor: '#f6f4d2' }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Payments Processing
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Payment processing functionality will be implemented here.
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Credits Tab */}
+      {activeTab === 4 && (
+        <Card sx={{ backgroundColor: '#f6f4d2' }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Vendor Credits
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Vendor credits management functionality will be implemented here.
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
 
     </Container>
   );

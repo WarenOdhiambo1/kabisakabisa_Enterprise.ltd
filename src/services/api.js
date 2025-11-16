@@ -120,16 +120,39 @@ export const salesAPI = {
 
 // Logistics API
 export const logisticsAPI = {
-  getVehicles: () => api.get('/logistics/vehicles').then(res => res.data),
+  // Vehicles
+  getVehicles: (params) => api.get('/logistics/vehicles', { params }).then(res => res.data),
+  getVehicle: (id) => api.get(`/logistics/vehicles/${id}`).then(res => res.data),
   createVehicle: (data) => api.post('/logistics/vehicles', data).then(res => res.data),
   updateVehicle: (id, data) => api.put(`/logistics/vehicles/${id}`, data).then(res => res.data),
   deleteVehicle: (id) => api.delete(`/logistics/vehicles/${id}`).then(res => res.data),
+  
+  // Trips
   getTrips: (params) => api.get('/logistics/trips', { params }).then(res => res.data),
+  getTrip: (id) => api.get(`/logistics/trips/${id}`).then(res => res.data),
   createTrip: (data) => api.post('/logistics/trips', data).then(res => res.data),
   updateTrip: (id, data) => api.put(`/logistics/trips/${id}`, data).then(res => res.data),
+  deleteTrip: (id) => api.delete(`/logistics/trips/${id}`).then(res => res.data),
+  
+  // Maintenance
   getAllMaintenance: () => api.get('/logistics/maintenance').then(res => res.data),
-  getMaintenance: (vehicleId) => api.get(`/logistics/maintenance/${vehicleId}`).then(res => res.data),
+  getMaintenance: (id) => api.get(`/logistics/maintenance/${id}`).then(res => res.data),
   createMaintenance: (data) => api.post('/logistics/maintenance', data).then(res => res.data),
+  updateMaintenance: (id, data) => api.put(`/logistics/maintenance/${id}`, data).then(res => res.data),
+  deleteMaintenance: (id) => api.delete(`/logistics/maintenance/${id}`).then(res => res.data),
+  
+  // Dashboard
+  getDashboard: () => api.get('/logistics/dashboard').then(res => res.data),
+};
+
+// Packages API
+export const packagesAPI = {
+  getAll: (params) => api.get('/packages', { params }).then(res => res.data),
+  getById: (id) => api.get(`/packages/${id}`).then(res => res.data),
+  create: (data) => api.post('/packages', data).then(res => res.data),
+  update: (id, data) => api.put(`/packages/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/packages/${id}`).then(res => res.data),
+  updateStatus: (id, data) => api.patch(`/packages/${id}/status`, data).then(res => res.data),
 };
 
 // Logistics Transactions API
@@ -222,8 +245,19 @@ export const documentsAPI = {
   deleteDocument: (documentId) => api.delete(`/documents/${documentId}`).then(res => res.data)
 };
 
-// Expenses API - using dedicated routes like logistics
+// Enhanced Expenses API
 export const expensesAPI = {
+  // Dashboard
+  getDashboardSummary: (params) => api.get('/expenses/dashboard/summary', { params }).then(res => res.data),
+  getTrends: (params) => api.get('/expenses/dashboard/trends', { params }).then(res => res.data),
+  
+  // Direct expenses
+  getDirectExpenses: (params) => api.get('/expenses/direct', { params }).then(res => res.data),
+  createDirectExpense: (data) => api.post('/expenses/direct', data).then(res => res.data),
+  updateDirectExpense: (id, data) => api.put(`/expenses/direct/${id}`, data).then(res => res.data),
+  deleteDirectExpense: (id) => api.delete(`/expenses/direct/${id}`).then(res => res.data),
+  
+  // Legacy methods
   getAll: (params) => api.get('/expenses', { params }).then(res => res.data),
   create: (data) => api.post('/expenses', data).then(res => res.data),
   update: (id, data) => api.put(`/expenses/${id}`, data).then(res => res.data),
@@ -242,43 +276,7 @@ export const expensesAPI = {
     { value: 'training', label: 'Training' },
     { value: 'other', label: 'Other' }
   ]),
-  getSummary: (params) => {
-    return expensesAPI.getAll(params).then(expenses => {
-      const summary = expenses.reduce((acc, expense) => {
-        const category = expense.category || 'other';
-        const amount = parseFloat(expense.amount) || 0;
-        
-        if (!acc[category]) {
-          acc[category] = {
-            category,
-            total_amount: 0,
-            count: 0,
-            expenses: []
-          };
-        }
-        
-        acc[category].total_amount += amount;
-        acc[category].count += 1;
-        acc[category].expenses.push({
-          id: expense.id,
-          expense_date: expense.expense_date,
-          amount: expense.amount,
-          description: expense.description
-        });
-        
-        return acc;
-      }, {});
-      
-      const totalAmount = Object.values(summary).reduce((sum, cat) => sum + cat.total_amount, 0);
-      
-      return {
-        summary: Object.values(summary),
-        total_amount: totalAmount,
-        total_expenses: expenses.length,
-        period: { startDate: params?.startDate, endDate: params?.endDate }
-      };
-    });
-  },
+  getSummary: (params) => expensesAPI.getDashboardSummary(params),
 };
 
 // Enhanced Stock API with more endpoints
@@ -300,6 +298,38 @@ stockAPI.getAllTransfers = (params) => api.get('/stock/transfers', { params }).t
 export const financeAPI = {
   getAnalytics: (params) => api.get('/finance/analytics', { params }).then(res => res.data),
   getProductCosts: () => api.get('/finance/product-costs').then(res => res.data),
+};
+
+// Bills API
+export const billsAPI = {
+  getDashboard: () => api.get('/bills/dashboard').then(res => res.data),
+  getList: (params) => api.get('/bills/list', { params }).then(res => res.data),
+  getById: (id) => api.get(`/bills/${id}`).then(res => res.data),
+  create: (data) => api.post('/bills', data).then(res => res.data),
+  updateStatus: (id, data) => api.put(`/bills/${id}/status`, data).then(res => res.data),
+  recordPayment: (id, data) => api.post(`/bills/${id}/payment`, data).then(res => res.data),
+  bulkApprove: (billIds) => api.post('/bills/bulk-approve', { billIds }).then(res => res.data),
+  delete: (id) => api.delete(`/bills/${id}`).then(res => res.data),
+};
+
+// Payments API
+export const paymentsAPI = {
+  getDashboard: () => api.get('/payments/dashboard').then(res => res.data),
+  getQueue: () => api.get('/payments/queue').then(res => res.data),
+  getAll: (params) => api.get('/payments', { params }).then(res => res.data),
+  process: (data) => api.post('/payments/process', data).then(res => res.data),
+  batchProcess: (payments) => api.post('/payments/batch', { payments }).then(res => res.data),
+  updateStatus: (id, data) => api.put(`/payments/${id}/status`, data).then(res => res.data),
+};
+
+// Vendor Credits API
+export const vendorCreditsAPI = {
+  getAll: (params) => api.get('/vendor-credits', { params }).then(res => res.data),
+  create: (data) => api.post('/vendor-credits', data).then(res => res.data),
+  update: (id, data) => api.put(`/vendor-credits/${id}`, data).then(res => res.data),
+  delete: (id) => api.delete(`/vendor-credits/${id}`).then(res => res.data),
+  apply: (id, billId) => api.post(`/vendor-credits/${id}/apply`, { bill_id: billId }).then(res => res.data),
+  approve: (id, notes) => api.post(`/vendor-credits/${id}/approve`, { notes }).then(res => res.data),
 };
 
 // Enhanced Sales API
@@ -381,12 +411,14 @@ export const dataAPI = {
           return { stock: stockData, transfers, movements };
 
         case 'logistics':
-          const [vehicles, trips, maintenance] = await Promise.all([
+          const [vehicles, trips, maintenance, packages, dashboard] = await Promise.all([
             logisticsAPI.getVehicles().catch(() => []),
             logisticsAPI.getTrips(params).catch(() => []),
-            logisticsAPI.getAllMaintenance().catch(() => [])
+            logisticsAPI.getAllMaintenance().catch(() => []),
+            packagesAPI.getAll().catch(() => []),
+            logisticsAPI.getDashboard().catch(() => ({}))
           ]);
-          return { vehicles, trips, maintenance };
+          return { vehicles, trips, maintenance, packages, dashboard };
 
         case 'orders':
           return await ordersAPI.getAll(params).catch(() => []);

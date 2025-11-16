@@ -30,12 +30,15 @@ import {
 
   InputAdornment
 } from '@mui/material';
-import { Add, Edit, Delete, LocalShipping, Build, TrendingUp, Search } from '@mui/icons-material';
+import { Add, Edit, Delete, LocalShipping, Build, TrendingUp, Search, Dashboard, Inventory } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 
 
 import { useForm } from 'react-hook-form';
-import { logisticsAPI, hrAPI, dataAPI } from '../services/api';
+import { logisticsAPI, hrAPI, dataAPI, packagesAPI } from '../services/api';
+import VehicleListPage from '../components/logistics/VehicleListPage';
+import PackageListPage from '../components/logistics/PackageListPage';
+import LogisticsDashboard from '../components/logistics/LogisticsDashboard';
 import { formatCurrency } from '../theme';
 import toast from 'react-hot-toast';
 
@@ -45,7 +48,9 @@ const LogisticsPage = () => {
   const [showAddVehicle, setShowAddVehicle] = useState(false);
   const [showAddTrip, setShowAddTrip] = useState(false);
   const [showAddMaintenance, setShowAddMaintenance] = useState(false);
+  const [showAddPackage, setShowAddPackage] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
+  const [editingPackage, setEditingPackage] = useState(null);
 
 
   const [vehicleSearch, setVehicleSearch] = useState('');
@@ -62,6 +67,7 @@ const LogisticsPage = () => {
   const { register, handleSubmit, reset, setValue } = useForm();
   const { register: registerTrip, handleSubmit: handleTripSubmit, reset: resetTrip } = useForm();
   const { register: registerMaintenance, handleSubmit: handleMaintenanceSubmit, reset: resetMaintenance } = useForm();
+  const { register: registerPackage, handleSubmit: handlePackageSubmit, reset: resetPackage } = useForm();
 
   // Queries
   const { data: pageData, isLoading, error } = useQuery(
@@ -73,6 +79,7 @@ const LogisticsPage = () => {
 
   const vehicles = useMemo(() => pageData?.vehicles || [], [pageData?.vehicles]);
   const allTrips = useMemo(() => pageData?.trips || [], [pageData?.trips]);
+  const packages = useMemo(() => pageData?.packages || [], [pageData?.packages]);
   const maintenance = useMemo(() => {
     let data = pageData?.maintenance || [];
     
@@ -219,9 +226,25 @@ const LogisticsPage = () => {
         toast.success('Maintenance recorded successfully!');
         setShowAddMaintenance(false);
         resetMaintenance();
+        queryClient.invalidateQueries('logisticsPageData');
       },
       onError: (error) => {
         toast.error(error.response?.data?.message || 'Failed to record maintenance');
+      }
+    }
+  );
+
+  const createPackageMutation = useMutation(
+    (data) => packagesAPI.create(data),
+    {
+      onSuccess: () => {
+        toast.success('Package created successfully!');
+        setShowAddPackage(false);
+        resetPackage();
+        queryClient.invalidateQueries('logisticsPageData');
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Failed to create package');
       }
     }
   );
@@ -373,6 +396,41 @@ const LogisticsPage = () => {
     createMaintenanceMutation.mutate(cleanData);
   };
 
+  const onSubmitPackage = (data) => {
+    if (!data.tracking_number?.trim()) {
+      toast.error('Tracking number is required');
+      return;
+    }
+    if (!data.carrier) {
+      toast.error('Carrier is required');
+      return;
+    }
+    if (!data.origin?.trim()) {
+      toast.error('Origin is required');
+      return;
+    }
+    if (!data.destination?.trim()) {
+      toast.error('Destination is required');
+      return;
+    }
+
+    const cleanData = {
+      tracking_number: data.tracking_number.trim(),
+      carrier: data.carrier,
+      origin: data.origin.trim(),
+      destination: data.destination.trim(),
+      ship_date: data.ship_date || new Date().toISOString().split('T')[0],
+      expected_delivery_date: data.expected_delivery_date || null,
+      status: data.status || 'packed',
+      items: data.items?.trim() || '',
+      weight: parseFloat(data.weight) || 0,
+      dimensions: data.dimensions?.trim() || '',
+      special_instructions: data.special_instructions?.trim() || ''
+    };
+
+    createPackageMutation.mutate(cleanData);
+  };
+
   const handleEditVehicle = (vehicle) => {
     setEditingVehicle(vehicle);
     setValue('plate_number', vehicle.plate_number);
@@ -502,6 +560,13 @@ const LogisticsPage = () => {
         >
           Maintenance
         </Button>
+        <Button
+          variant="outlined"
+          startIcon={<Inventory />}
+          onClick={() => setShowAddPackage(true)}
+        >
+          Add Package
+        </Button>
 
 
       </Box>
@@ -509,15 +574,22 @@ const LogisticsPage = () => {
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-          <Tab label="Vehicles" />
-          <Tab label="Trips" />
-          <Tab label="Maintenance" />
-          <Tab label="Performance" />
+          <Tab label="dashboard" icon={<Dashboard />} />
+          <Tab label="vehicles" />
+          <Tab label="trips" />
+          <Tab label="maintenance" />
+          <Tab label="packages" />
+          <Tab label="performance" />
         </Tabs>
       </Box>
 
-      {/* Vehicles Tab */}
+      {/* Dashboard Tab */}
       {activeTab === 0 && (
+        <LogisticsDashboard />
+      )}
+
+      {/* Vehicles Tab */}
+      {activeTab === 1 && (
         <Card>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -596,7 +668,7 @@ const LogisticsPage = () => {
       )}
 
       {/* Trips Tab */}
-      {activeTab === 1 && (
+      {activeTab === 2 && (
         <Card>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
@@ -750,7 +822,7 @@ const LogisticsPage = () => {
       )}
 
       {/* Maintenance Tab */}
-      {activeTab === 2 && (
+      {activeTab === 3 && (
         <Card>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
@@ -880,8 +952,25 @@ const LogisticsPage = () => {
         </Card>
       )}
 
+      {/* Packages Tab */}
+      {activeTab === 4 && (
+        <PackageListPage
+          onAddPackage={() => setShowAddPackage(true)}
+          onEditPackage={(pkg) => {
+            setEditingPackage(pkg);
+            Object.keys(pkg).forEach(key => {
+              setValue(key, pkg[key]);
+            });
+            setShowAddPackage(true);
+          }}
+          onViewPackage={(pkg) => {
+            toast.info(`Viewing package: ${pkg.tracking_number}`);
+          }}
+        />
+      )}
+
       {/* Performance Tab */}
-      {activeTab === 3 && (
+      {activeTab === 5 && (
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1417,6 +1506,108 @@ const LogisticsPage = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Add Package Dialog */}
+      <Dialog open={showAddPackage} onClose={() => setShowAddPackage(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {editingPackage ? 'Edit Package' : 'Add New Package'}
+        </DialogTitle>
+        <DialogContent>
+          <Box component="form" sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Tracking Number *"
+              margin="normal"
+              {...registerPackage('tracking_number', { required: true })}
+            />
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Carrier *</InputLabel>
+              <Select
+                {...registerPackage('carrier', { required: true })}
+                label="Carrier"
+              >
+                <MenuItem value="DHL">DHL</MenuItem>
+                <MenuItem value="FedEx">FedEx</MenuItem>
+                <MenuItem value="UPS">UPS</MenuItem>
+                <MenuItem value="Local">Local Delivery</MenuItem>
+                <MenuItem value="Other">Other</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Origin *"
+              margin="normal"
+              {...registerPackage('origin', { required: true })}
+            />
+            <TextField
+              fullWidth
+              label="Destination *"
+              margin="normal"
+              {...registerPackage('destination', { required: true })}
+            />
+            <TextField
+              fullWidth
+              label="Ship Date"
+              type="date"
+              margin="normal"
+              InputLabelProps={{ shrink: true }}
+              {...registerPackage('ship_date')}
+            />
+            <TextField
+              fullWidth
+              label="Expected Delivery Date"
+              type="date"
+              margin="normal"
+              InputLabelProps={{ shrink: true }}
+              {...registerPackage('expected_delivery_date')}
+            />
+            <TextField
+              fullWidth
+              label="Items Description"
+              multiline
+              rows={2}
+              margin="normal"
+              {...registerPackage('items')}
+            />
+            <TextField
+              fullWidth
+              label="Weight (kg)"
+              type="number"
+              step="0.1"
+              margin="normal"
+              {...registerPackage('weight')}
+            />
+            <TextField
+              fullWidth
+              label="Dimensions"
+              margin="normal"
+              placeholder="L x W x H (cm)"
+              {...registerPackage('dimensions')}
+            />
+            <TextField
+              fullWidth
+              label="Special Instructions"
+              multiline
+              rows={2}
+              margin="normal"
+              {...registerPackage('special_instructions')}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setShowAddPackage(false);
+            setEditingPackage(null);
+            resetPackage();
+          }}>Cancel</Button>
+          <Button 
+            onClick={handlePackageSubmit(onSubmitPackage)}
+            variant="contained"
+            disabled={createPackageMutation.isLoading}
+          >
+            {editingPackage ? 'Update' : 'Add'} Package
+          </Button>
+        </DialogActions>
+      </Dialog>
 
     </Container>
   );
