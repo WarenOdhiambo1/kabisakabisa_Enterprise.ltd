@@ -119,7 +119,8 @@ const LogisticsPage = () => {
   
   // Filter trips by date and vehicle
   const trips = useMemo(() => {
-    let filteredTrips = [...(allTrips || [])];
+    if (!Array.isArray(allTrips)) return [];
+    let filteredTrips = [...allTrips];
     
     // Filter by date range
     if (tripStartDate || tripEndDate) {
@@ -147,8 +148,9 @@ const LogisticsPage = () => {
   
   // Filter vehicles by search
   const filteredVehicles = useMemo(() => {
-    if (!vehicleSearch) return vehicles || [];
-    return (vehicles || []).filter(vehicle => 
+    if (!Array.isArray(vehicles)) return [];
+    if (!vehicleSearch) return vehicles;
+    return vehicles.filter(vehicle => 
       vehicle.plate_number?.toLowerCase().includes(vehicleSearch.toLowerCase()) ||
       vehicle.vehicle_type?.toLowerCase().includes(vehicleSearch.toLowerCase())
     );
@@ -446,12 +448,12 @@ const LogisticsPage = () => {
 
 
   // Calculate statistics
-  const totalTrips = (allTrips || []).length;
-  const totalRevenue = (allTrips || []).reduce((sum, trip) => sum + (parseFloat(trip.amount_charged) || 0), 0);
-  const totalProfit = (allTrips || []).reduce((sum, trip) => sum + ((parseFloat(trip.amount_charged) || 0) - (parseFloat(trip.fuel_cost) || 0)), 0);
-  const activeVehicles = (vehicles || []).filter(v => v.status === 'active' || !v.status).length;
+  const totalTrips = Array.isArray(allTrips) ? allTrips.length : 0;
+  const totalRevenue = Array.isArray(allTrips) ? allTrips.reduce((sum, trip) => sum + (parseFloat(trip.amount_charged) || 0), 0) : 0;
+  const totalProfit = Array.isArray(allTrips) ? allTrips.reduce((sum, trip) => sum + ((parseFloat(trip.amount_charged) || 0) - (parseFloat(trip.fuel_cost) || 0)), 0) : 0;
+  const activeVehicles = Array.isArray(vehicles) ? vehicles.filter(v => v.status === 'active' || !v.status).length : 0;
 
-  const drivers = (employees || []).filter(emp => emp.role === 'logistics');
+  const drivers = Array.isArray(employees) ? employees.filter(emp => emp.role === 'logistics') : [];
   
 
 

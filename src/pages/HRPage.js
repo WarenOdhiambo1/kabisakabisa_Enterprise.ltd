@@ -86,7 +86,8 @@ const HRPage = () => {
 
   // Filter employees based on search and filters (show all employees with status)
   const employees = useMemo(() => {
-    let filtered = [...(allEmployees || [])];
+    if (!Array.isArray(allEmployees)) return [];
+    let filtered = [...allEmployees];
     
     if (employeeSearch) {
       filtered = filtered.filter(emp => 
@@ -112,7 +113,8 @@ const HRPage = () => {
 
   // Filter payroll based on period
   const payroll = useMemo(() => {
-    let filtered = [...(allPayroll || [])];
+    if (!Array.isArray(allPayroll)) return [];
+    let filtered = [...allPayroll];
     
     if (payrollPeriod) {
       const [year, month] = payrollPeriod.split('-');
@@ -137,7 +139,7 @@ const HRPage = () => {
   }, [payroll, selectedPayrollIds]);
 
   // Get drivers for logistics integration
-  const drivers = (employees || []).filter(emp => emp.role === 'logistics');
+  const drivers = Array.isArray(employees) ? employees.filter(emp => emp.role === 'logistics') : [];
   const totalDrivers = drivers.length;
   const activeDrivers = drivers.filter(d => d.is_active).length;
 
@@ -430,12 +432,12 @@ const HRPage = () => {
   };
 
   // Calculate statistics with proper null checks
-  const totalEmployees = (allEmployees || []).length;
-  const activeEmployees = (allEmployees || []).filter(emp => emp.is_active !== false).length;
-  const totalSalaryExpense = (allEmployees || [])
+  const totalEmployees = Array.isArray(allEmployees) ? allEmployees.length : 0;
+  const activeEmployees = Array.isArray(allEmployees) ? allEmployees.filter(emp => emp.is_active !== false).length : 0;
+  const totalSalaryExpense = Array.isArray(allEmployees) ? allEmployees
     .filter(emp => emp.is_active !== false && emp.salary)
-    .reduce((sum, emp) => sum + parseFloat(emp.salary || 0), 0);
-  const pendingPayroll = (allPayroll || []).filter(p => p.payment_status === 'pending').length;
+    .reduce((sum, emp) => sum + parseFloat(emp.salary || 0), 0) : 0;
+  const pendingPayroll = Array.isArray(allPayroll) ? allPayroll.filter(p => p.payment_status === 'pending').length : 0;
   const averageSalary = activeEmployees > 0 ? totalSalaryExpense / activeEmployees : 0;
 
   // Watch form values for validation
@@ -1073,7 +1075,7 @@ const HRPage = () => {
                     </TableHead>
                     <TableBody>
                       {['admin', 'boss', 'manager', 'hr', 'sales', 'logistics'].map(role => {
-                        const count = (allEmployees || []).filter(emp => emp.role === role).length;
+                        const count = Array.isArray(allEmployees) ? allEmployees.filter(emp => emp.role === role).length : 0;
                         const percentage = totalEmployees > 0 ? ((count / totalEmployees) * 100).toFixed(1) : 0;
                         return (
                           <TableRow key={role}>
