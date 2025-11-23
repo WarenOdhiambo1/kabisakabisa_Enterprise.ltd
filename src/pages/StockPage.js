@@ -58,14 +58,11 @@ const StockPage = () => {
     { enabled: !!branchId, refetchInterval: 3600000, retry: false }
   );
 
-  const { data: stockMovements = [], isLoading: movementsLoading } = useQuery(
-    ['stockMovements', branchId],
-    () => branchId ? api.get(`/stock/movements/${branchId}`).then(res => res.data).catch(() => []) : [],
-    { enabled: !!branchId, refetchInterval: 3600000, retry: false }
+  const { data: pendingTransfers = [], isLoading: transfersLoading } = useQuery(
+    ['pendingTransfers', branchId],
+    () => branchId ? api.get(`/stock/transfers/pending/${branchId}`).then(res => res.data).catch(() => []) : [],
+    { enabled: !!branchId, refetchInterval: 30000, retry: false }
   );
-
-  // Filter pending transfers from stock movements
-  const pendingTransfers = stockMovements.filter(transfer => transfer.status === 'pending');
 
   const { data: branches = [] } = useQuery(
     'branches',
@@ -73,7 +70,7 @@ const StockPage = () => {
     { retry: false }
   );
 
-  const isLoading = stockLoading || movementsLoading;
+  const isLoading = stockLoading || transfersLoading;
   const error = null;
 
   // Mutations - Use authenticated API services
@@ -134,7 +131,7 @@ const StockPage = () => {
         toast.success('Stock transfer initiated successfully!');
         setShowTransfer(false);
         resetTransfer();
-        queryClient.invalidateQueries(['stockMovements', branchId]);
+        queryClient.invalidateQueries(['pendingTransfers', branchId]);
       },
       onError: (error) => {
         console.error('=== TRANSFER MUTATION ERROR ===');
@@ -155,7 +152,7 @@ const StockPage = () => {
     {
       onSuccess: () => {
         toast.success('Transfer approved successfully!');
-        queryClient.invalidateQueries(['stockMovements', branchId]);
+        queryClient.invalidateQueries(['pendingTransfers', branchId]);
         queryClient.invalidateQueries(['stock', branchId]);
       },
       onError: (error) => {
@@ -171,7 +168,7 @@ const StockPage = () => {
     {
       onSuccess: () => {
         toast.success('Transfer rejected successfully!');
-        queryClient.invalidateQueries(['stockMovements', branchId]);
+        queryClient.invalidateQueries(['pendingTransfers', branchId]);
         queryClient.invalidateQueries(['stock', branchId]);
       },
       onError: (error) => {
@@ -546,11 +543,11 @@ const StockPage = () => {
                 <TableBody>
                   {pendingTransfers.map((transfer) => (
                     <TableRow key={transfer.id}>
-                      <TableCell>{transfer.product_name}</TableCell>
-                      <TableCell>{transfer.from_branch_name}</TableCell>
+                      <TableCell>{transfer.product_id}</TableCell>
+                      <TableCell>{transfer.from_branch_id?.[0] || 'N/A'}</TableCell>
                       <TableCell>{transfer.quantity}</TableCell>
-                      <TableCell>{transfer.requested_by_name}</TableCell>
-                      <TableCell>{new Date(transfer.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>{transfer.requested_by?.[0] || 'System'}</TableCell>
+                      <TableCell>{transfer.created_at ? new Date(transfer.created_at).toLocaleDateString() : 'N/A'}</TableCell>
                       <TableCell>
                         <Button 
                           size="small" 
