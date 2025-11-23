@@ -24,299 +24,22 @@ import {
   InputLabel,
   Chip,
   Paper,
-  IconButton,
-  Tabs,
-  Tab
+  IconButton
 } from '@mui/material';
-import { Add, Edit, Delete, TrendingUp, Business, Dashboard, AccountBalance, CreditCard, Assignment, Receipt } from '@mui/icons-material';
+import { Add, Edit, Delete, Receipt, Business, TrendingUp } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useForm } from 'react-hook-form';
 import { expensesAPI, branchesAPI, logisticsAPI } from '../services/api';
-import api from '../services/api';
 import { formatCurrency } from '../theme';
-
 import toast from 'react-hot-toast';
 
-// Bills Management Component
-const BillsManagement = () => {
-  
-  const { data: billsData = [], isLoading: billsLoading } = useQuery(
-    'bills',
-    () => api.get('/bills').then(res => res.data),
-    { onError: () => toast.error('Failed to load bills') }
-  );
-  
-  return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h6">Bills Management</Typography>
-        <Button variant="contained" startIcon={<Add />}>
-          Create Bill
-        </Button>
-      </Box>
-      
-      <Card sx={{ backgroundColor: '#f6f4d2' }}>
-        <CardContent>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Bill Number</TableCell>
-                  <TableCell>Vendor</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Due Date</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {billsLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} align="center">Loading bills...</TableCell>
-                  </TableRow>
-                ) : (
-                  Array.isArray(billsData) ? billsData.map((bill) => (
-                    <TableRow key={bill.id} hover>
-                      <TableCell>{bill.bill_number}</TableCell>
-                      <TableCell>{bill.vendor_name}</TableCell>
-                      <TableCell>{formatCurrency(bill.total_amount || 0)}</TableCell>
-                      <TableCell>{bill.due_date ? new Date(bill.due_date).toLocaleDateString() : 'N/A'}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={bill.status || 'Draft'} 
-                          color={bill.status === 'paid' ? 'success' : bill.status === 'overdue' ? 'error' : 'default'}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <IconButton size="small">
-                          <Edit />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  )) : (
-                    <TableRow>
-                      <TableCell colSpan={6} align="center">No bills found</TableCell>
-                    </TableRow>
-                  )
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
-    </Box>
-  );
-};
 
-// Payments Processing Component
-const PaymentsProcessing = () => {
-  
-  const { data: paymentsData = [], isLoading: paymentsLoading } = useQuery(
-    'payments',
-    () => api.get('/payments').then(res => res.data),
-    { onError: () => toast.error('Failed to load payments') }
-  );
-  
-  const { data: queueData = [] } = useQuery(
-    'payment-queue',
-    () => api.get('/payments/queue').then(res => res.data),
-    { onError: () => console.error('Failed to load payment queue') }
-  );
-  
-  return (
-    <Box>
-      <Typography variant="h6" gutterBottom>Payments Processing</Typography>
-      
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ backgroundColor: '#f6f4d2' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Payment Queue</Typography>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Vendor</TableCell>
-                      <TableCell>Amount Due</TableCell>
-                      <TableCell>Due Date</TableCell>
-                      <TableCell>Priority</TableCell>
-                      <TableCell>Action</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {Array.isArray(queueData) ? queueData.map((item) => (
-                      <TableRow key={item.id} hover>
-                        <TableCell>{item.vendor_name}</TableCell>
-                        <TableCell>{formatCurrency(item.amount_due || 0)}</TableCell>
-                        <TableCell>{item.due_date ? new Date(item.due_date).toLocaleDateString() : 'N/A'}</TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={item.priority || 'Normal'} 
-                            color={item.priority === 'high' ? 'error' : 'default'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button size="small" variant="outlined">
-                            Pay Now
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )) : (
-                      <TableRow>
-                        <TableCell colSpan={5} align="center">No pending payments</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} md={6}>
-          <Card sx={{ backgroundColor: '#ffe5d9' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Recent Payments</Typography>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Vendor</TableCell>
-                      <TableCell>Amount</TableCell>
-                      <TableCell>Method</TableCell>
-                      <TableCell>Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {paymentsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={5} align="center">Loading payments...</TableCell>
-                      </TableRow>
-                    ) : (
-                      Array.isArray(paymentsData.payments) ? paymentsData.payments.slice(0, 10).map((payment) => (
-                        <TableRow key={payment.id} hover>
-                          <TableCell>{payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'N/A'}</TableCell>
-                          <TableCell>{payment.vendor_name}</TableCell>
-                          <TableCell>{formatCurrency(payment.amount || 0)}</TableCell>
-                          <TableCell>{payment.payment_method || 'N/A'}</TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={payment.status || 'Pending'} 
-                              color={payment.status === 'completed' ? 'success' : 'default'}
-                              size="small"
-                            />
-                          </TableCell>
-                        </TableRow>
-                      )) : (
-                        <TableRow>
-                          <TableCell colSpan={5} align="center">No payments found</TableCell>
-                        </TableRow>
-                      )
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
-  );
-};
-
-// Vendor Credits Component
-const VendorCredits = () => {
-  
-  const { data: creditsData = [], isLoading: creditsLoading } = useQuery(
-    'vendor-credits',
-    () => api.get('/vendor-credits').then(res => res.data),
-    { onError: () => toast.error('Failed to load vendor credits') }
-  );
-  
-  return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h6">Vendor Credits</Typography>
-        <Button variant="contained" startIcon={<Add />}>
-          Create Credit
-        </Button>
-      </Box>
-      
-      <Card sx={{ backgroundColor: '#f6f4d2' }}>
-        <CardContent>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Credit Number</TableCell>
-                  <TableCell>Vendor</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Applied To</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {creditsLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} align="center">Loading credits...</TableCell>
-                  </TableRow>
-                ) : (
-                  Array.isArray(creditsData) ? creditsData.map((credit) => (
-                    <TableRow key={credit.id} hover>
-                      <TableCell>{credit.credit_number}</TableCell>
-                      <TableCell>{credit.vendor_name}</TableCell>
-                      <TableCell>{formatCurrency(credit.amount || 0)}</TableCell>
-                      <TableCell>{credit.credit_date ? new Date(credit.credit_date).toLocaleDateString() : 'N/A'}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={credit.status || 'Pending'} 
-                          color={credit.status === 'applied' ? 'success' : credit.status === 'approved' ? 'primary' : 'default'}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>{credit.applied_to_bill || 'Not Applied'}</TableCell>
-                      <TableCell>
-                        <IconButton size="small">
-                          <Edit />
-                        </IconButton>
-                        {credit.status === 'approved' && (
-                          <Button size="small" variant="outlined" sx={{ ml: 1 }}>
-                            Apply
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  )) : (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">No vendor credits found</TableCell>
-                    </TableRow>
-                  )
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
-    </Box>
-  );
-};
 
 const ExpensePage = () => {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState(0);
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
-
-  const [dateRange, setDateRange] = useState({
-    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0]
-  });
 
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
@@ -324,6 +47,7 @@ const ExpensePage = () => {
       category: '',
       amount: '',
       description: '',
+      branch_id: '',
       vehicle_id: '',
       receipt_number: '',
       supplier_name: ''
@@ -332,55 +56,23 @@ const ExpensePage = () => {
 
   // Queries
   const { data: expenses = [], isLoading: expensesLoading } = useQuery(
-    ['expenses', selectedBranchId, dateRange],
-    () => expensesAPI.getAll({
-      branchId: selectedBranchId || undefined,
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate
-    }),
-    { 
-      enabled: true,
-      retry: 2,
-      onError: (error) => {
-        console.error('Failed to fetch expenses:', error);
-        toast.error('Failed to load expenses. Please try again.');
-      }
-    }
+    ['expenses', selectedBranchId],
+    () => expensesAPI.getAll({ branchId: selectedBranchId || undefined }),
+    { onError: () => toast.error('Failed to load expenses') }
   );
 
   const { data: branches = [] } = useQuery('branches', () => branchesAPI.getAll());
   const { data: vehicles = [] } = useQuery('vehicles', () => logisticsAPI.getVehicles().catch(() => []));
-  // Predefined expense categories (icons removed for clean interface)
+
   const categories = [
-    { value: 'office_supplies', label: 'Office Supplies' },
-    { value: 'travel', label: 'Travel' },
-    { value: 'marketing', label: 'Marketing' },
+    { value: 'fuel', label: 'Fuel' },
+    { value: 'maintenance', label: 'Maintenance' },
     { value: 'utilities', label: 'Utilities' },
     { value: 'rent', label: 'Rent' },
-    { value: 'insurance', label: 'Insurance' },
-    { value: 'maintenance', label: 'Maintenance' },
-    { value: 'fuel', label: 'Fuel' },
-    { value: 'equipment', label: 'Equipment' },
-    { value: 'professional_services', label: 'Professional Services' },
-    { value: 'training', label: 'Training' },
+    { value: 'travel', label: 'Travel' },
+    { value: 'office_supplies', label: 'Office Supplies' },
     { value: 'other', label: 'Other' }
   ];
-
-  const { data: expenseSummary } = useQuery(
-    ['expenseSummary', selectedBranchId, dateRange],
-    () => expensesAPI.getSummary({
-      branchId: selectedBranchId || undefined,
-      startDate: dateRange.startDate,
-      endDate: dateRange.endDate
-    }),
-    { 
-      enabled: true,
-      retry: 2,
-      onError: (error) => {
-        console.error('Failed to fetch expense summary:', error);
-      }
-    }
-  );
 
   // Mutations
   const createExpenseMutation = useMutation(
@@ -431,9 +123,8 @@ const ExpensePage = () => {
   );
 
   const onSubmit = (data) => {
-    // Backend validation: expense_date, category, amount, description are required
-    if (!data.expense_date || !data.category || !data.amount || !data.description) {
-      toast.error('Expense date, category, amount, and description are required');
+    if (!data.expense_date || !data.category || !data.amount || !data.description || !data.branch_id) {
+      toast.error('All fields are required');
       return;
     }
 
@@ -447,7 +138,7 @@ const ExpensePage = () => {
       category: data.category,
       amount: parseFloat(data.amount),
       description: data.description.trim(),
-      branch_id: selectedBranchId ? [selectedBranchId] : undefined,
+      branch_id: [data.branch_id],
       vehicle_id: data.vehicle_id ? [data.vehicle_id] : undefined,
       receipt_number: data.receipt_number || undefined,
       supplier_name: data.supplier_name || undefined
@@ -466,6 +157,7 @@ const ExpensePage = () => {
     setValue('category', expense.category);
     setValue('amount', expense.amount);
     setValue('description', expense.description);
+    setValue('branch_id', Array.isArray(expense.branch_id) ? expense.branch_id[0] : expense.branch_id || '');
     setValue('vehicle_id', Array.isArray(expense.vehicle_id) ? expense.vehicle_id[0] : expense.vehicle_id || '');
     setValue('receipt_number', expense.receipt_number || '');
     setValue('supplier_name', expense.supplier_name || '');
@@ -482,109 +174,59 @@ const ExpensePage = () => {
 
   if (expensesLoading) {
     return (
-      <Container maxWidth="xl" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center' }}>
-        <div>Loading...</div>
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        <Typography>Loading expenses...</Typography>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="xl" sx={{ mt: { xs: 2, md: 4 }, mb: { xs: 2, md: 4 }, px: { xs: 1, sm: 2 } }}>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+      {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">
+        <Typography variant="h4" sx={{ fontFamily: 'Nunito', fontWeight: 700 }}>
           Expense Management
         </Typography>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => setShowExpenseModal(true)}
+          sx={{ backgroundColor: '#2e7d32' }}
+        >
+          Add Expense
+        </Button>
       </Box>
 
-      {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-          <Tab label="dashboard" icon={<Dashboard />} />
-          <Tab label="direct expenses" icon={<Receipt />} />
-          <Tab label="bills" icon={<AccountBalance />} />
-          <Tab label="payments" icon={<CreditCard />} />
-          <Tab label="credits" icon={<Assignment />} />
-        </Tabs>
-      </Box>
-
-      {/* Dashboard Tab */}
-      {activeTab === 0 && (
-        <Card sx={{ backgroundColor: '#f6f4d2' }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Expenses Dashboard
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Dashboard functionality will be implemented here.
-            </Typography>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Direct Expenses Tab */}
-      {activeTab === 1 && (
-        <Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <FormControl sx={{ minWidth: 200 }}>
-            <InputLabel>Branch Filter</InputLabel>
-            <Select
-              value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(e.target.value)}
-              label="Branch Filter"
-              startAdornment={<Business sx={{ mr: 1, color: 'action.active' }} />}
-            >
-              <MenuItem value="">All Branches</MenuItem>
-              {branches.map((branch) => (
-                <MenuItem key={branch.id} value={branch.id}>
-                  {branch.branch_name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => setShowExpenseModal(true)}
-          >
-            Add Expense
-            </Button>
-            </Box>
-          </Box>
-
-          {/* Date Range Filter */}
+      {/* Filters */}
       <Card sx={{ mb: 3, backgroundColor: '#f6f4d2' }}>
         <CardContent>
-          <Grid container spacing={{ xs: 1, sm: 2 }} alignItems="center">
-            <Grid item xs={12} sm={3}>
-              <TextField
-                fullWidth
-                label="Start Date"
-                type="date"
-                value={dateRange.startDate}
-                onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                InputLabelProps={{ shrink: true }}
-              />
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth>
+                <InputLabel>Filter by Branch</InputLabel>
+                <Select
+                  value={selectedBranchId}
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                  label="Filter by Branch"
+                  startAdornment={<Business sx={{ mr: 1, color: 'action.active' }} />}
+                >
+                  <MenuItem value="">All Branches</MenuItem>
+                  {branches.map((branch) => (
+                    <MenuItem key={branch.id} value={branch.id}>
+                      {branch.branch_name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                fullWidth
-                label="End Date"
-                type="date"
-                value={dateRange.endDate}
-                onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} md={8}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <TrendingUp color="primary" />
                 <Typography variant="h6">
-                  Total: {formatCurrency(totalExpenses)}
+                  Total Expenses: {formatCurrency(totalExpenses)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  ({Array.isArray(expenses) ? expenses.length : 0} expenses)
+                  ({expenses.length} records)
                 </Typography>
               </Box>
             </Grid>
@@ -592,36 +234,11 @@ const ExpensePage = () => {
         </CardContent>
       </Card>
 
-          {/* Summary Cards */}
-      {expenseSummary && Array.isArray(expenseSummary.summary) && (
-        <Grid container spacing={{ xs: 1, sm: 2 }} sx={{ mb: 3 }}>
-          {expenseSummary.summary.slice(0, 4).map((categorySum) => {
-            const category = Array.isArray(categories) ? categories.find(c => c.value === categorySum.category) : null;
-            return (
-              <Grid item xs={6} sm={6} md={3} key={categorySum.category}>
-                <Card sx={{ backgroundColor: categorySum.category === 'fuel' ? '#ffe5d9' : '#f6f4d2' }}>
-                  <CardContent>
-                    <Typography color="textSecondary" gutterBottom variant="body2">
-                      {category?.label || categorySum.category}
-                    </Typography>
-                    <Typography variant="h6">
-                      {formatCurrency(categorySum.total_amount)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {categorySum.count} expenses
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })}
-        </Grid>
-      )}
-
-          {/* Expenses Table */}
+      {/* Expenses Table */}
       <Card sx={{ backgroundColor: '#ffe5d9' }}>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="h6" gutterBottom sx={{ fontFamily: 'Nunito', fontWeight: 600 }}>
+            <Receipt sx={{ mr: 1, verticalAlign: 'middle' }} />
             Expense Records
           </Typography>
           
@@ -640,8 +257,11 @@ const ExpensePage = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {Array.isArray(expenses) ? expenses.map((expense) => {
-                  const category = Array.isArray(categories) ? categories.find(c => c.value === expense.category) : null;
+                {expenses.map((expense) => {
+                  const category = categories.find(c => c.value === expense.category);
+                  const branch = branches.find(b => b.id === (Array.isArray(expense.branch_id) ? expense.branch_id[0] : expense.branch_id));
+                  const vehicle = vehicles.find(v => v.id === (Array.isArray(expense.vehicle_id) ? expense.vehicle_id[0] : expense.vehicle_id));
+                  
                   return (
                     <TableRow key={expense.id} hover>
                       <TableCell>
@@ -660,24 +280,13 @@ const ExpensePage = () => {
                           {expense.description || 'N/A'}
                         </Typography>
                       </TableCell>
-                      <TableCell>
-                        {Array.isArray(expense.branch_id) && expense.branch_id.length > 0 
-                          ? (Array.isArray(branches) ? branches.find(b => b.id === expense.branch_id[0])?.branch_name : null) || 'Unknown Branch'
-                          : 'N/A'
-                        }
-                      </TableCell>
-                      <TableCell>
-                        {Array.isArray(expense.vehicle_id) && expense.vehicle_id.length > 0
-                          ? (Array.isArray(vehicles) ? vehicles.find(v => v.id === expense.vehicle_id[0])?.plate_number : null) || expense.vehicle_plate_number || 'N/A'
-                          : expense.vehicle_plate_number || 'N/A'
-                        }
-                      </TableCell>
+                      <TableCell>{branch?.branch_name || 'N/A'}</TableCell>
+                      <TableCell>{vehicle?.plate_number || 'N/A'}</TableCell>
                       <TableCell>{expense.receipt_number || '-'}</TableCell>
                       <TableCell>
                         <IconButton onClick={() => handleEdit(expense)} size="small">
                           <Edit />
                         </IconButton>
-
                         <IconButton 
                           onClick={() => deleteExpenseMutation.mutate(expense.id)} 
                           size="small"
@@ -688,12 +297,12 @@ const ExpensePage = () => {
                       </TableCell>
                     </TableRow>
                   );
-                }) : null}}
-                {(!Array.isArray(expenses) || expenses.length === 0) && (
+                })}
+                {expenses.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} align="center">
                       <Typography color="text.secondary" sx={{ py: 4 }}>
-                        No expenses found for the selected criteria
+                        No expenses found. Add your first expense to get started.
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -704,14 +313,14 @@ const ExpensePage = () => {
         </CardContent>
       </Card>
 
-          {/* Add/Edit Expense Modal */}
+      {/* Add/Edit Expense Modal */}
       <Dialog open={showExpenseModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
         <DialogTitle>
           {editingExpense ? 'Edit Expense' : 'Add New Expense'}
         </DialogTitle>
         <DialogContent>
           <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 2 }}>
-            <Grid container spacing={{ xs: 1, sm: 2 }}>
+            <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
@@ -720,6 +329,22 @@ const ExpensePage = () => {
                   {...register('expense_date', { required: true })}
                   InputLabelProps={{ shrink: true }}
                 />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Branch *</InputLabel>
+                  <Select
+                    {...register('branch_id', { required: true })}
+                    label="Branch *"
+                    value={watch('branch_id') || ''}
+                  >
+                    {branches.map((branch) => (
+                      <MenuItem key={branch.id} value={branch.id}>
+                        {branch.branch_name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
@@ -747,13 +372,6 @@ const ExpensePage = () => {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Receipt Number"
-                  {...register('receipt_number')}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
                 <FormControl fullWidth>
                   <InputLabel>Vehicle (Optional)</InputLabel>
                   <Select
@@ -773,8 +391,8 @@ const ExpensePage = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Supplier Name"
-                  {...register('supplier_name')}
+                  label="Receipt Number"
+                  {...register('receipt_number')}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -785,6 +403,13 @@ const ExpensePage = () => {
                   rows={3}
                   {...register('description', { required: true })}
                   placeholder="Describe the business purpose of this expense..."
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Supplier Name"
+                  {...register('supplier_name')}
                 />
               </Grid>
             </Grid>
@@ -799,26 +424,8 @@ const ExpensePage = () => {
           >
             {editingExpense ? 'Update' : 'Create'} Expense
           </Button>
-          </DialogActions>
-        </Dialog>
-        </Box>
-      )}
-
-      {/* Bills Tab */}
-      {activeTab === 2 && (
-        <BillsManagement />
-      )}
-
-      {/* Payments Tab */}
-      {activeTab === 3 && (
-        <PaymentsProcessing />
-      )}
-
-      {/* Credits Tab */}
-      {activeTab === 4 && (
-        <VendorCredits />
-      )}
-
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
