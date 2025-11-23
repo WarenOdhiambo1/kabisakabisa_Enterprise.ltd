@@ -544,28 +544,42 @@ const StockPage = () => {
                   {pendingTransfers.map((transfer) => (
                     <TableRow key={transfer.id}>
                       <TableCell>{transfer.product_id}</TableCell>
-                      <TableCell>{transfer.from_branch_id?.[0] || 'N/A'}</TableCell>
+                      <TableCell>
+                        {transfer.direction === 'incoming' ? transfer.from_branch_id?.[0] : transfer.to_branch_id?.[0] || 'N/A'}
+                        <Chip 
+                          label={transfer.direction === 'incoming' ? 'FROM' : 'TO'} 
+                          size="small" 
+                          color={transfer.direction === 'incoming' ? 'primary' : 'secondary'}
+                          sx={{ ml: 1 }}
+                        />
+                      </TableCell>
                       <TableCell>{transfer.quantity}</TableCell>
                       <TableCell>{transfer.requested_by?.[0] || 'System'}</TableCell>
                       <TableCell>{transfer.created_at ? new Date(transfer.created_at).toLocaleDateString() : 'N/A'}</TableCell>
                       <TableCell>
-                        <Button 
-                          size="small" 
-                          variant="contained" 
-                          color="success"
-                          onClick={() => approveTransferMutation.mutate(transfer.id)}
-                          sx={{ mr: 1 }}
-                        >
-                          Approve
-                        </Button>
-                        <Button 
-                          size="small" 
-                          variant="outlined" 
-                          color="error"
-                          onClick={() => rejectTransferMutation.mutate(transfer.id)}
-                        >
-                          Reject
-                        </Button>
+                        {transfer.canApprove ? (
+                          <>
+                            <Button 
+                              size="small" 
+                              variant="contained" 
+                              color="success"
+                              onClick={() => approveTransferMutation.mutate(transfer.id)}
+                              sx={{ mr: 1 }}
+                            >
+                              Approve
+                            </Button>
+                            <Button 
+                              size="small" 
+                              variant="outlined" 
+                              color="error"
+                              onClick={() => rejectTransferMutation.mutate(transfer.id)}
+                            >
+                              Reject
+                            </Button>
+                          </>
+                        ) : (
+                          <Chip label="Awaiting Approval" color="warning" size="small" />
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
