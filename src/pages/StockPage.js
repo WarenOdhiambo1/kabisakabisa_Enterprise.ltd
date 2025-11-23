@@ -137,9 +137,15 @@ const StockPage = () => {
         queryClient.invalidateQueries(['stockMovements', branchId]);
       },
       onError: (error) => {
-        const message = error.response?.data?.message || 'Failed to initiate transfer';
-        toast.error(message);
-        console.error('Transfer stock error:', error);
+        console.error('=== TRANSFER MUTATION ERROR ===');
+        console.error('Error object:', error);
+        console.error('Response data:', error.response?.data);
+        console.error('Response status:', error.response?.status);
+        console.error('Request config:', error.config);
+        console.error('================================');
+        
+        const message = error.response?.data?.message || error.response?.data?.error || 'Failed to initiate transfer';
+        toast.error(`Transfer failed: ${message}`);
       }
     }
   );
@@ -268,6 +274,7 @@ const StockPage = () => {
       reason: data.reason?.trim() || 'Stock transfer'
     };
 
+    console.log('Submitting transfer data:', transferData);
     transferStockMutation.mutate(transferData);
   };
 
@@ -643,7 +650,14 @@ const StockPage = () => {
         <DialogActions>
           <Button onClick={() => setShowTransfer(false)}>Cancel</Button>
           <Button 
-            onClick={handleTransferSubmit(onSubmitTransfer)}
+            onClick={() => {
+              console.log('Transfer button clicked');
+              try {
+                handleTransferSubmit(onSubmitTransfer)();
+              } catch (err) {
+                console.error('Transfer submit error:', err);
+              }
+            }}
             variant="contained"
             disabled={transferStockMutation.isLoading}
           >

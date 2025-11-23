@@ -96,7 +96,16 @@ export const stockAPI = {
   getByBranch: (branchId) => api.get(`/stock/branch/${branchId}`).then(res => res.data),
   addStock: (branchId, data) => api.post('/stock', { ...data, branchId, branch_id: [branchId] }).then(res => res.data),
   addQuantity: (stockId, quantity) => api.post(`/stock/${stockId}/add-quantity`, { quantity }).then(res => res.data),
-  transfer: (data) => api.post('/stock/transfer', data).then(res => res.data),
+  transfer: (data) => {
+    console.log('Transfer API called with:', data);
+    return api.post('/stock/transfer', data).then(res => {
+      console.log('Transfer API response:', res.data);
+      return res.data;
+    }).catch(err => {
+      console.error('Transfer API error:', err.response?.data || err.message);
+      throw err;
+    });
+  },
   getPendingTransfers: (branchId) => api.get(`/stock/transfers/pending/${branchId}`).then(res => res.data),
   approveTransfer: (transferId) => api.put(`/stock/transfers/${transferId}/approve`).then(res => res.data),
   rejectTransfer: (transferId, data) => api.put(`/stock/transfers/${transferId}/reject`, data).then(res => res.data),
