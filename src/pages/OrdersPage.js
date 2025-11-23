@@ -76,22 +76,14 @@ const OrdersPage = () => {
 
   const { data: orderItems = [] } = useQuery(
     'orderItems',
-    () => fetch('https://enterprisebackendltd-iwi8.vercel.app/api/orders/items', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    }).then(res => res.json()).catch(() => [])
+    () => fetch('https://enterprisebackendltd-iwi8.vercel.app/api/orders/items')
+      .then(res => res.json()).catch(() => [])
   );
 
   const { data: trackingData = [] } = useQuery(
     'orderTracking',
-    () => fetch('https://enterprisebackendltd-iwi8.vercel.app/api/orders/tracking', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    }).then(res => res.json()).catch(() => [])
+    () => fetch('https://enterprisebackendltd-iwi8.vercel.app/api/orders/tracking')
+      .then(res => res.json()).catch(() => [])
   );
 
   // Mutations
