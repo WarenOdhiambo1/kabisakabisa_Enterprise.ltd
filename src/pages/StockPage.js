@@ -70,13 +70,25 @@ const StockPage = () => {
     { enabled: !!branchId, refetchInterval: 30000, retry: false }
   );
 
+  const { data: completedTransfers = [], isLoading: completedLoading } = useQuery(
+    ['completedTransfers', branchId],
+    () => branchId ? api.get(`/stock/transfers/completed/${branchId}`).then(res => {
+      console.log('Completed transfers response:', res.data);
+      return res.data;
+    }).catch(err => {
+      console.error('Completed transfers error:', err);
+      return [];
+    }) : [],
+    { enabled: !!branchId, refetchInterval: 60000, retry: false }
+  );
+
   const { data: branches = [] } = useQuery(
     'branches',
     () => branchesAPI.getAll(),
     { retry: false }
   );
 
-  const isLoading = stockLoading || transfersLoading;
+  const isLoading = stockLoading || transfersLoading || completedLoading;
   const error = null;
 
   // Mutations - Use authenticated API services
@@ -159,6 +171,7 @@ const StockPage = () => {
       onSuccess: () => {
         toast.success('Transfer approved successfully!');
         queryClient.invalidateQueries(['pendingTransfers', branchId]);
+        queryClient.invalidateQueries(['completedTransfers', branchId]);
         queryClient.invalidateQueries(['stock', branchId]);
       },
       onError: (error) => {
@@ -175,6 +188,7 @@ const StockPage = () => {
       onSuccess: () => {
         toast.success('Transfer rejected successfully!');
         queryClient.invalidateQueries(['pendingTransfers', branchId]);
+        queryClient.invalidateQueries(['completedTransfers', branchId]);
         queryClient.invalidateQueries(['stock', branchId]);
       },
       onError: (error) => {
@@ -411,6 +425,7 @@ const StockPage = () => {
           <Tab label="Current Stock" />
           <Tab label="Low Stock Alerts" />
           <Tab label="Pending Transfers" />
+          <Tab label="Completed Transfers" />
         </Tabs>
       </Box>
 
@@ -549,9 +564,9 @@ const StockPage = () => {
                 <TableBody>
                   {pendingTransfers.map((transfer) => (
                     <TableRow key={transfer.id}>
-                      <TableCell>{transfer.product_id}</TableCell>
+                      <TableCell>{transfer.product_name || transfer.product_id}</TableCell>
                       <TableCell>
-                        {transfer.direction === 'incoming' ? transfer.from_branch_id?.[0] : transfer.to_branch_id?.[0] || 'N/A'}
+                        {transfer.direction === 'incoming' ? transfer.from_branch_name : transfer.to_branch_name}
                         <Chip 
                           label={transfer.direction === 'incoming' ? 'FROM' : 'TO'} 
                           size="small" 
@@ -560,7 +575,7 @@ const StockPage = () => {
                         />
                       </TableCell>
                       <TableCell>{transfer.quantity}</TableCell>
-                      <TableCell>{transfer.requested_by?.[0] || 'System'}</TableCell>
+                      <TableCell>{transfer.requested_by_name}</TableCell>
                       <TableCell>{transfer.created_at ? new Date(transfer.created_at).toLocaleDateString() : 'N/A'}</TableCell>
                       <TableCell>
                         {transfer.canApprove ? (
@@ -586,6 +601,55 @@ const StockPage = () => {
                         ) : (
                           <Chip label="Awaiting Approval" color="warning" size="small" />
                         )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Completed Transfers Tab */}
+      {activeTab === 3 && (
+        <Card sx={{ backgroundColor: '#e8f5e8' }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Completed Transfers
+            </Typography>
+            <TableContainer component={Paper} sx={{ overflowX: 'auto', '& .MuiTable-root': { minWidth: 600 } }}>
+              <Table size="small" sx={{ '& .MuiTableCell-root': { border: '1px solid rgba(224, 224, 224, 1)' } }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Product</TableCell>
+                    <TableCell>From/To Branch</TableCell>
+                    <TableCell>Quantity</TableCell>
+                    <TableCell>Requested By</TableCell>
+                    <TableCell>Approved By</TableCell>
+                    <TableCell>Date Completed</TableCell>
+                    <TableCell>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {completedTransfers.map((transfer) => (
+                    <TableRow key={transfer.id}>
+                      <TableCell>{transfer.product_name || transfer.product_id}</TableCell>
+                      <TableCell>
+                        {transfer.direction === 'incoming' ? transfer.from_branch_name : transfer.to_branch_name}
+                        <Chip 
+                          label={transfer.direction === 'incoming' ? 'FROM' : 'TO'} 
+                          size="small" 
+                          color={transfer.direction === 'incoming' ? 'primary' : 'secondary'}
+                          sx={{ ml: 1 }}
+                        />
+                      </TableCell>
+                      <TableCell>{transfer.quantity}</TableCell>
+                      <TableCell>{transfer.requested_by_name}</TableCell>
+                      <TableCell>{transfer.approved_by_name}</TableCell>
+                      <TableCell>{transfer.approved_at ? new Date(transfer.approved_at).toLocaleDateString() : 'N/A'}</TableCell>
+                      <TableCell>
+                        <Chip label="Completed" color="success" size="small" />
                       </TableCell>
                     </TableRow>
                   ))}
