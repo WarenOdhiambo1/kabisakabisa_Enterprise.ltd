@@ -76,12 +76,14 @@ const OrdersPage = () => {
 
   const { data: orderItems = [] } = useQuery(
     'orderItems',
-    () => fetch('https://enterprisebackendltd-iwi8.vercel.app/api/orders/items', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    }).then(res => res.json()).catch(() => [])
+    () => fetch('https://enterprisebackendltd-iwi8.vercel.app/api/orders/items')
+      .then(res => res.json()).catch(() => [])
+  );
+
+  const { data: trackingData = [] } = useQuery(
+    'orderTracking',
+    () => fetch('https://enterprisebackendltd-iwi8.vercel.app/api/orders/tracking')
+      .then(res => res.json()).catch(() => [])
   );
 
   // Mutations
@@ -524,50 +526,45 @@ const OrdersPage = () => {
                     </TableRow>
                   )
                 ) : activeTab === 4 ? (
-                  orderItems.length > 0 ? orderItems.map((item) => {
-                    const orderId = Array.isArray(item.order_id) ? item.order_id[0] : item.order_id;
-                    const order = orders.find(o => o.id === orderId);
-                    const quantityOrdered = item.quantity_ordered || 0;
-                    const quantityReceived = item.quantity_received || 0;
-                    const remaining = quantityOrdered - quantityReceived;
-                    const progress = quantityOrdered > 0 ? (quantityReceived / quantityOrdered) * 100 : 0;
-                    const branchName = branches.find(b => item.branch_destination_id && item.branch_destination_id.includes(b.id))?.branch_name || 'Not Assigned';
-                    
-                    return (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <Box>
-                            <Typography variant="body2" fontWeight="bold">{order?.supplier_name || 'Unknown'}</Typography>
-                            <Typography variant="caption" color="text.secondary">{orderId}</Typography>
+                  trackingData.length > 0 ? trackingData.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body2" fontWeight="bold">{item.supplier_name}</Typography>
+                          <Typography variant="caption" color="text.secondary">{item.order_number}</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>{item.product_name}</TableCell>
+                      <TableCell>{item.quantity_ordered}</TableCell>
+                      <TableCell>{item.quantity_completed}</TableCell>
+                      <TableCell>
+                        <Typography color={item.quantity_remaining > 0 ? 'error.main' : 'success.main'} fontWeight="bold">
+                          {item.quantity_remaining}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{item.destination_branch}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Box sx={{ width: 60, height: 6, bgcolor: 'grey.300', borderRadius: 1 }}>
+                            <Box 
+                              sx={{ 
+                                width: `${item.progress_percentage}%`, 
+                                height: '100%', 
+                                bgcolor: item.progress_percentage === 100 ? 'success.main' : 'warning.main',
+                                borderRadius: 1 
+                              }} 
+                            />
                           </Box>
-                        </TableCell>
-                        <TableCell>{item.product_name}</TableCell>
-                        <TableCell>{quantityOrdered}</TableCell>
-                        <TableCell>{quantityReceived}</TableCell>
-                        <TableCell>
-                          <Typography color={remaining > 0 ? 'error.main' : 'success.main'} fontWeight="bold">
-                            {remaining}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>{branchName}</TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Box sx={{ width: 60, height: 6, bgcolor: 'grey.300', borderRadius: 1 }}>
-                              <Box 
-                                sx={{ 
-                                  width: `${progress}%`, 
-                                  height: '100%', 
-                                  bgcolor: progress === 100 ? 'success.main' : 'warning.main',
-                                  borderRadius: 1 
-                                }} 
-                              />
-                            </Box>
-                            <Typography variant="caption">{Math.round(progress)}%</Typography>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  }) : (
+                          <Typography variant="caption">{item.progress_percentage}%</Typography>
+                          <Chip 
+                            label={item.status} 
+                            size="small" 
+                            color={item.status === 'Completed' ? 'success' : item.status === 'Partial' ? 'warning' : 'default'}
+                          />
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  )) : (
                     <TableRow>
                       <TableCell colSpan={7} align="center">
                         <Typography color="text.secondary" sx={{ py: 4 }}>
