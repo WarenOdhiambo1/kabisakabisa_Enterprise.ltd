@@ -22,6 +22,7 @@ import AdminPage from './pages/AdminPage';
 import ExpensePage from './pages/ExpensePage';
 import FinancePage from './pages/FinancePage';
 import ProtectedRoute from './components/ProtectedRoute';
+import InstallPrompt from './components/InstallPrompt';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -122,6 +123,7 @@ function AppContent() {
           </Routes>
         </div>
       </Router>
+      <InstallPrompt />
       <Toaster position="top-right" />
     </div>
   );
