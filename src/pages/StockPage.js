@@ -60,7 +60,13 @@ const StockPage = () => {
 
   const { data: pendingTransfers = [], isLoading: transfersLoading } = useQuery(
     ['pendingTransfers', branchId],
-    () => branchId ? api.get(`/stock/transfers/pending/${branchId}`).then(res => res.data).catch(() => []) : [],
+    () => branchId ? api.get(`/stock/transfers/pending/${branchId}`).then(res => {
+      console.log('Pending transfers response:', res.data);
+      return res.data;
+    }).catch(err => {
+      console.error('Pending transfers error:', err);
+      return [];
+    }) : [],
     { enabled: !!branchId, refetchInterval: 30000, retry: false }
   );
 
