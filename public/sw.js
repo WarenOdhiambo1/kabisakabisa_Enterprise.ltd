@@ -1,6 +1,9 @@
-const CACHE_NAME = 'kabisa-enterprise-v2';
+const CACHE_NAME = 'kabisa-enterprise-v1';
 const urlsToCache = [
-  '/'
+  '/',
+  '/static/js/bundle.js',
+  '/static/css/main.css',
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -12,7 +15,13 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request)
-      .catch(() => caches.match(event.request))
+    caches.match(event.request)
+      .then((response) => {
+        if (response) {
+          return response;
+        }
+        return fetch(event.request);
+      }
+    )
   );
 });
