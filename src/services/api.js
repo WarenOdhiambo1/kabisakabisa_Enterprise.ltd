@@ -15,6 +15,7 @@ const api = axios.create({
 // Request interceptor to add auth token and CSRF protection
 api.interceptors.request.use(
   async (config) => {
+    console.log(`[API REQUEST] ${config.method.toUpperCase()} ${config.url}`);
     const token = Cookies.get('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -25,17 +26,30 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('[API REQUEST ERROR]', error);
     return Promise.reject(error);
   }
 );
 
 // Response interceptor for token refresh
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`[API RESPONSE] ${response.config.method.toUpperCase()} ${response.config.url} - ${response.status}`);
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
+    
+    console.error('[API ERROR]', {
+      method: error.config?.method?.toUpperCase(),
+      url: error.config?.url,
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message,
+      data: error.response?.data
+    });
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      console.log('[API] Attempting token refresh...');
       originalRequest._retry = true;
 
       try {
@@ -52,11 +66,12 @@ api.interceptors.response.use(
             sameSite: 'strict'
           });
 
+          console.log('[API] Token refreshed successfully');
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api(originalRequest);
         }
       } catch (refreshError) {
-        // Refresh failed, redirect to login
+        console.error('[API ERROR] Token refresh failed, redirecting to login');
         Cookies.remove('accessToken');
         Cookies.remove('refreshToken');
         Cookies.remove('userData');

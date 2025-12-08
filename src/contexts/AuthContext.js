@@ -89,13 +89,17 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     try {
+      console.log('[AUTH] Login attempt:', { email: credentials.email });
       const response = await authAPI.login(credentials);
+      console.log('[AUTH] Login response received');
       
       if (response.requiresMfaSetup) {
+        console.log('[AUTH] MFA setup required');
         return { requiresMfaSetup: true, userId: response.userId };
       }
       
       if (response.requiresMfa) {
+        console.log('[AUTH] MFA verification required');
         return { requiresMfa: true, userId: response.userId };
       }
 
@@ -120,10 +124,16 @@ export const AuthProvider = ({ children }) => {
 
       setUser(response.user);
       setupSessionTimeout();
+      console.log('[AUTH] Login successful:', { role: response.user.role });
       
       return { success: true };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[AUTH ERROR] Login failed:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url
+      });
       throw error;
     }
   };
