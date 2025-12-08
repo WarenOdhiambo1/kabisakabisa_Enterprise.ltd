@@ -7,9 +7,16 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  // console.log('ProtectedRoute - user:', user, 'loading:', loading, 'path:', location.pathname);
+  console.log('[PROTECTED ROUTE]', {
+    path: location.pathname,
+    user: user?.role,
+    loading,
+    allowedRoles,
+    hasAccess: allowedRoles.length === 0 || allowedRoles.includes(user?.role)
+  });
 
   if (loading) {
+    console.log('[PROTECTED ROUTE] Loading user...');
     return (
       <Box 
         display="flex" 
@@ -23,15 +30,16 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
 
   if (!user) {
-    // Redirect to login with return url
+    console.error('[ROUTING ERROR] Unauthorized access attempt to:', location.pathname);
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    // User doesn't have required role
+    console.error('[ROUTING ERROR] Forbidden - User role:', user.role, 'Required:', allowedRoles, 'Path:', location.pathname);
     return <Navigate to="/dashboard" replace />;
   }
 
+  console.log('[PROTECTED ROUTE] Access granted to:', location.pathname);
   return children;
 };
 

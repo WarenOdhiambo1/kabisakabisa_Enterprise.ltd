@@ -1,9 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Toaster } from 'react-hot-toast';
+import { initializeRoutingLogger, logRouteChange } from './utils/routingLogger';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import theme from './theme';
@@ -33,13 +34,38 @@ const queryClient = new QueryClient({
   },
 });
 
+function RouteLogger() {
+  const location = useLocation();
+  const { user } = useAuth();
+
+  React.useEffect(() => {
+    logRouteChange(location, user);
+  }, [location, user]);
+
+  return null;
+}
+
 function AppContent() {
   const { user } = useAuth();
+
+  React.useEffect(() => {
+    initializeRoutingLogger();
+    console.log('[APP] Application initialized');
+  }, []);
+
+  React.useEffect(() => {
+    console.log('[ROUTING] User state changed:', { 
+      isAuthenticated: !!user, 
+      role: user?.role,
+      userId: user?.id 
+    });
+  }, [user]);
 
   return (
     <div className="App">
       <CssBaseline />
       <Router>
+        <RouteLogger />
         {user && <Navbar />}
         <div style={{ paddingTop: user ? '64px' : '0', minHeight: '100vh' }}>
           <Routes>
@@ -119,7 +145,7 @@ function AppContent() {
               </ProtectedRoute>
             } />
 
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={<NotFoundHandler />} />
           </Routes>
         </div>
       </Router>
@@ -129,10 +155,24 @@ function AppContent() {
   );
 }
 
+function NotFoundHandler() {
+  const location = window.location;
+  console.error('[ROUTING ERROR] 404 - Route not found:', {
+    pathname: location.pathname,
+    search: location.search,
+    hash: location.hash,
+    timestamp: new Date().toISOString()
+  });
+  return <Navigate to="/" replace />;
+}
+
 function DashboardRedirect() {
   const { user } = useAuth();
   
+  console.log('[ROUTING] Dashboard redirect triggered:', { user: user?.role });
+  
   if (!user) {
+    console.warn('[ROUTING ERROR] No user found, redirecting to login');
     return <Navigate to="/login" replace />;
   }
   
@@ -140,23 +180,31 @@ function DashboardRedirect() {
   
   switch (role) {
     case 'boss':
+      console.log('[ROUTING] Redirecting boss to /boss');
       return <Navigate to="/boss" replace />;
     case 'manager':
+      console.log('[ROUTING] Redirecting manager to /manager');
       return <Navigate to="/manager" replace />;
     case 'hr':
+      console.log('[ROUTING] Redirecting hr to /hr');
       return <Navigate to="/hr" replace />;
     case 'admin':
+      console.log('[ROUTING] Redirecting admin to /admin');
       return <Navigate to="/admin" replace />;
     case 'sales':
       const branchId = user.branchId || user.branch_id || (user.branch_id && user.branch_id[0]);
       if (branchId) {
+        console.log('[ROUTING] Redirecting sales to /sales/' + branchId);
         return <Navigate to={`/sales/${branchId}`} replace />;
       } else {
+        console.error('[ROUTING ERROR] Sales user has no branchId:', user);
         return <Navigate to="/" replace />;
       }
     case 'logistics':
+      console.log('[ROUTING] Redirecting logistics to /logistics');
       return <Navigate to="/logistics" replace />;
     default:
+      console.error('[ROUTING ERROR] Unknown role:', role);
       return <Navigate to="/" replace />;
   }
 }
