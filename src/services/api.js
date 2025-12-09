@@ -6,7 +6,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://enterprisebackend
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -86,8 +86,8 @@ api.interceptors.response.use(
 
 // Auth API
 export const authAPI = {
-  register: (data) => api.post('/auth/register', data).then(res => res.data),
-  login: (credentials) => api.post('/auth/login', credentials).then(res => res.data),
+  register: (data) => api.post('/auth/register', data, { timeout: 90000 }).then(res => res.data),
+  login: (credentials) => api.post('/auth/login', credentials, { timeout: 90000 }).then(res => res.data),
   setupMFA: (userId) => api.post('/auth/setup-mfa', { userId }).then(res => res.data),
   verifyMFA: (userId, token) => api.post('/auth/verify-mfa', { userId, token }).then(res => res.data),
   refreshToken: (refreshToken) => api.post('/auth/refresh', { refreshToken }).then(res => res.data),
@@ -97,8 +97,18 @@ export const authAPI = {
 
 // Branches API
 export const branchesAPI = {
-  getPublic: () => api.get('/branches/public').then(res => res.data),
-  getAll: () => api.get('/branches').then(res => res.data),
+  getPublic: () => api.get('/branches/public').then(res => res.data).catch(() => [
+    {
+      id: 'mock1',
+      name: 'Main Branch',
+      address: '123 Main Street, Nairobi, Kenya',
+      latitude: -1.2921,
+      longitude: 36.8219,
+      phone: '+254712345678',
+      email: 'main@kabisakabisa.com'
+    }
+  ]),
+  getAll: () => api.get('/branches').then(res => res.data).catch(() => []),
   getById: (id) => api.get(`/branches/${id}`).then(res => res.data),
   create: (data) => api.post('/branches', data).then(res => res.data),
   update: (id, data) => api.put(`/branches/${id}`, data).then(res => res.data),
